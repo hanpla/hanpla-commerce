@@ -25,6 +25,7 @@ export type CartActions = {
   toggleSelectItem: (id: string) => void;
   selectAllItems: (selected: boolean) => void;
   clearCart: () => void;
+  loadUserCart: (userId: string) => Promise<void>;
   toggleDrawer: () => void;
   openDrawer: () => void;
   closeDrawer: () => void;

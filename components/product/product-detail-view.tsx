@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CartIcon from "@/components/icons/cart-icon";
 import HeartIcon from "@/components/icons/heart-icon";
 import StarIcon from "@/components/icons/star-icon";
@@ -9,6 +9,7 @@ import OptionSelector from "@/components/product/option-selector";
 import Badge from "@/components/ui/badge";
 import Button from "@/components/ui/button";
 import { useCartStore } from "@/lib/store/use-cart-store";
+import { useRecentStore } from "@/lib/store/use-recent-store";
 import { Product, ProductColor, ProductSize } from "@/types/product";
 
 // 로컬 헬퍼: 수량 조절 컨트롤러
@@ -57,6 +58,13 @@ const ProductDetailView = ({ product }: { product: Product }) => {
   const [isLiked, setIsLiked] = useState(false);
 
   const cartStore = useCartStore();
+  const addRecentProduct = useRecentStore((s) => s.addRecentProduct);
+
+  useEffect(() => {
+    if (product) {
+      addRecentProduct(product);
+    }
+  }, [product, addRecentProduct]);
 
   const handleAddToCart = () => {
     cartStore.addItem(product, { color: selectedColor, size: selectedSize }, quantity);

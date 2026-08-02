@@ -1,36 +1,57 @@
-import { WishlistActions, WishlistState } from "@/types/wishlist";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import {
+  fetchUserWishlistFromDb,
+  addWishlistItemToDb,
+  deleteWishlistItemFromDb,
+} from "@/lib/api/wishlist-db";
+import { useAuthStore } from "@/lib/store/use-auth-store";
+import { WishlistActions, WishlistState } from "@/types/wishlist";
 
 type WishlistStore = WishlistState & WishlistActions;
 
-export const useWishlistStore = create<WishlistStore>()(
-  persist(
-    (set, get) => ({
-      wishlistIds: ["prod-1", "prod-4"], // Default initial sample items
+export const useWishlistStore = create<WishlistStore>()((set, get) => ({
+  wishlistIds: [],
 
-      toggleWishlist: (productId: string) => {
-        const current = get().wishlistIds;
-        if (current.includes(productId)) {
-          set({ wishlistIds: current.filter((id) => id !== productId) });
-        } else {
-          set({ wishlistIds: [...current, productId] });
-        }
-      },
-
-      isInWishlist: (productId: string) => {
-        return get().wishlistIds.includes(productId);
-      },
-
-      clearWishlist: () => {
-        set({ wishlistIds: [] });
-      },
-    }),
-    {
-      name: "hanpla-wishlist-storage",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : (null as never)
-      ),
+  loadUserWishlist: async (userId: string) => {
+    if (!userId) {
+      set({ wishlistIds: [] });
+      return;
     }
-  )
-);
+    try {
+      const dbWishlist = await fetchUserWishlistFromDb(userId);
+      set({ wishlistIds: dbWishlist || [] });
+    } catch {
+      set({ wishlistIds: [] });
+    }
+  },
+
+  toggleWishlist: (productId: string) => {
+    const userId = useAuthStore.getState().user?.id;
+    if (!userId) {
+      if (typeof window !== "undefined") {
+        alert("위시리스트(찜) 기능은 로그인 회원 전용 서비스입니다. 로그인 후 이용해 주세요.");
+        window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
+      }
+      return;
+    }
+
+    const current = get().wishlistIds;
+    const isExists = current.includes(productId);
+
+    if (isExists) {
+      set({ wishlistIds: current.filter((id) => id !== productId) });
+      deleteWishlistItemFromDb(userId, productId).catch(() => {});
+    } else {
+      set({ wishlistIds: [...current, productId] });
+      addWishlistItemToDb(userId, productId).catch(() => {});
+    }
+  },
+
+  isInWishlist: (productId: string) => {
+    return get().wishlistIds.includes(productId);
+  },
+
+  clearWishlist: () => {
+    set({ wishlistIds: [] });
+  },
+}));
