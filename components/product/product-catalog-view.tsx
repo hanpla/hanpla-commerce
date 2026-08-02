@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use, useEffect, useState } from "react";
+import { Suspense, use, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import CategoryTabs from "@/components/product/category-tabs";
 import ProductCard from "@/components/product/product-card";
@@ -14,19 +14,37 @@ import { CategoryOption, Product, ProductCategory, ProductSize, SortOption } fro
 type ProductCatalogViewProps = {
   fixedCategory?: ProductCategory;
   paramsPromise?: Promise<{ category: string }>;
+  initialCategories?: CategoryOption[];
+  initialProducts?: Product[];
+  initialCurrentCategory?: CategoryOption;
 };
 
 // 서스펜스 래핑 내부 공통 상품 카탈로그 View
-const ProductCatalogContent = ({ fixedCategory, paramsPromise }: ProductCatalogViewProps) => {
+const ProductCatalogContent = ({
+  fixedCategory,
+  paramsPromise,
+  initialCategories,
+  initialProducts,
+  initialCurrentCategory,
+}: ProductCatalogViewProps) => {
   const resolvedParams = paramsPromise ? use(paramsPromise) : undefined;
   const targetCategory = (resolvedParams?.category as ProductCategory | undefined) ?? fixedCategory;
 
   const searchParams = useSearchParams();
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [currentCategory, setCurrentCategory] = useState<CategoryOption | undefined>();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // 초기 카테고리 매핑
+  const initialCurCat =
+    initialCurrentCategory ||
+    (targetCategory && initialCategories
+      ? initialCategories.find((c) => c.id === targetCategory)
+      : undefined);
+
+  const [categories, setCategories] = useState<CategoryOption[]>(initialCategories || []);
+  const [currentCategory, setCurrentCategory] = useState<CategoryOption | undefined>(initialCurCat);
+  const [products, setProducts] = useState<Product[]>(initialProducts || []);
+  const [isLoading, setIsLoading] = useState(!initialProducts);
   const [sort, setSort] = useState<SortOption>("newest");
+  const isInitialMount = useRef(true);
 
   const categoryParam = targetCategory ?? (searchParams.get("category") as ProductCategory | null);
   const queryParam = searchParams.get("q") || undefined;
@@ -45,10 +63,19 @@ const ProductCatalogContent = ({ fixedCategory, paramsPromise }: ProductCatalogV
   const sizeKey = sizesParam.join(",");
 
   useEffect(() => {
+    // 최초 마운트 시 initialProducts가 존재하면 추가 쿼리 없이 건너뜀 (클라이언트 waterfall 0회)
+    if (isInitialMount.current && initialProducts && initialProducts.length > 0) {
+      isInitialMount.current = false;
+      return;
+    }
+    isInitialMount.current = false;
+
+    let isCancelled = false;
+
     const fetchData = async () => {
       setIsLoading(true);
       const [catData, curCat, prodData] = await Promise.all([
-        getCategories(),
+        categories.length > 0 ? Promise.resolve(categories) : getCategories(),
         targetCategory ? getCategoryById(targetCategory) : Promise.resolve(undefined),
         getFilteredProducts({
           category: categoryParam ?? undefined,
@@ -61,14 +88,20 @@ const ProductCatalogContent = ({ fixedCategory, paramsPromise }: ProductCatalogV
           sort,
         }),
       ]);
-      setCategories(catData);
-      setCurrentCategory(curCat);
-      setProducts(prodData);
-      setIsLoading(false);
+
+      if (!isCancelled) {
+        setCategories(catData);
+        setCurrentCategory(curCat);
+        setProducts(prodData);
+        setIsLoading(false);
+      }
     };
 
     fetchData();
 
+    return () => {
+      isCancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     targetCategory,
@@ -146,21 +179,45 @@ const ProductCatalogContent = ({ fixedCategory, paramsPromise }: ProductCatalogV
   );
 };
 
-// 메인 재사용 가능한 ProductCatalogView 컴포넌트
-const ProductCatalogView = (props: ProductCatalogViewProps) => {
+// 로컬 헬퍼: 서스펜스 폴백 컴포넌트
+const ProductCatalogFallback = (props: ProductCatalogViewProps) => {
   return (
-    <Suspense
-      fallback={
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:col-span-3">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-black tracking-tight text-neutral-900 uppercase">
+          {props.fixedCategory ? props.fixedCategory : "ALL PRODUCTS"}
+        </h1>
+        <p className="text-xs text-neutral-500">
+          {props.fixedCategory
+            ? `${props.fixedCategory} 카테고리의 큐레이션 상품 목록입니다.`
+            : "HANPLA 커머스의 전체 피스 컬렉션을 확인해보세요."}
+        </p>
+      </div>
+
+      <CategoryTabs
+        categories={props.initialCategories || []}
+        activeCategory={props.fixedCategory || null}
+      />
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+        <div className="flex flex-col gap-4 lg:col-span-3">
+          <SortBar sort="newest" onSortChange={() => {}} totalCount={0} />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
             {Array.from({ length: 6 }).map((_, idx) => (
               <ProductCardSkeleton key={idx} />
             ))}
           </div>
-          <ProductFilterSkeleton className="lg:col-span-1" />
         </div>
-      }
-    >
+        <ProductFilterSkeleton className="lg:col-span-1" />
+      </div>
+    </div>
+  );
+};
+
+// 메인 재사용 가능한 ProductCatalogView 컴포넌트
+const ProductCatalogView = (props: ProductCatalogViewProps) => {
+  return (
+    <Suspense fallback={<ProductCatalogFallback {...props} />}>
       <ProductCatalogContent {...props} />
     </Suspense>
   );

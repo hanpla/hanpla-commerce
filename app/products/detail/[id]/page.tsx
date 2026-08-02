@@ -11,6 +11,9 @@ type PageProps = {
 
 export const generateStaticParams = async () => {
   const products = await getProducts();
+  if (products.length === 0) {
+    return [{ id: "prod-1" }];
+  }
   return products.map((prod) => ({
     id: prod.id,
   }));
