@@ -75,6 +75,8 @@ const LoginForm = () => {
               name="email"
               required
               placeholder="example@hanpla.com"
+              defaultValue={state.inputs?.email ?? ""}
+              key={`email-${state.inputs?.email ?? ""}`}
               className="pl-10 text-sm"
             />
           </div>

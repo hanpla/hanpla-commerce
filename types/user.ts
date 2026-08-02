@@ -39,6 +39,11 @@ export interface AuthActionState {
   success: boolean;
   error?: string;
   needsVerification?: boolean;
+  inputs?: {
+    name?: string;
+    email?: string;
+    agreedTerms?: boolean;
+  };
 }
 
 export const AUTH_INITIAL_STATE: AuthActionState = {

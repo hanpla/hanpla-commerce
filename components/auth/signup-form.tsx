@@ -68,6 +68,8 @@ const SignupForm = () => {
               name="name"
               required
               placeholder="홍길동"
+              defaultValue={state.inputs?.name ?? ""}
+              key={`name-${state.inputs?.name ?? ""}`}
               className="pl-10 text-sm"
             />
           </div>
@@ -82,6 +84,8 @@ const SignupForm = () => {
             name="email"
             required
             placeholder="example@hanpla.com"
+            defaultValue={state.inputs?.email ?? ""}
+            key={`email-${state.inputs?.email ?? ""}`}
             className="text-sm"
           />
         </div>
@@ -123,6 +127,8 @@ const SignupForm = () => {
             id="terms"
             name="agreedTerms"
             value="true"
+            defaultChecked={state.inputs?.agreedTerms ?? false}
+            key={`terms-${state.inputs?.agreedTerms ?? false}`}
             className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
           />
           <label htmlFor="terms" className="text-xs text-neutral-600">

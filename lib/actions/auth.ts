@@ -33,11 +33,12 @@ export const loginAction = async (
   _prevState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> => {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const email = (formData.get("email") as string) || "";
+  const password = (formData.get("password") as string) || "";
+  const inputs = { email };
 
   if (!email || !password) {
-    return { success: false, error: "이메일과 비밀번호를 모두 입력해 주세요." };
+    return { success: false, error: "이메일과 비밀번호를 모두 입력해 주세요.", inputs };
   }
 
   try {
@@ -48,12 +49,12 @@ export const loginAction = async (
     });
 
     if (error) {
-      return { success: false, error: translateLoginError(error.message) };
+      return { success: false, error: translateLoginError(error.message), inputs };
     }
 
     return { success: true };
   } catch {
-    return { success: false, error: "오류가 발생했습니다. 다시 시도해 주세요." };
+    return { success: false, error: "오류가 발생했습니다. 다시 시도해 주세요.", inputs };
   }
 };
 
@@ -61,28 +62,35 @@ export const signupAction = async (
   _prevState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> => {
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const confirmPassword = formData.get("confirmPassword") as string;
-  const agreedTerms = formData.get("agreedTerms");
+  const name = (formData.get("name") as string) || "";
+  const email = (formData.get("email") as string) || "";
+  const password = (formData.get("password") as string) || "";
+  const confirmPassword = (formData.get("confirmPassword") as string) || "";
+  const agreedTerms = Boolean(formData.get("agreedTerms"));
+
+  const inputs = {
+    name,
+    email,
+    agreedTerms,
+  };
 
   if (!name || !email || !password || !confirmPassword) {
-    return { success: false, error: "모든 필드를 입력해 주세요." };
+    return { success: false, error: "모든 필드를 입력해 주세요.", inputs };
   }
 
   if (password.length < 6) {
-    return { success: false, error: "비밀번호는 최소 6자 이상이어야 합니다." };
+    return { success: false, error: "비밀번호는 최소 6자 이상이어야 합니다.", inputs };
   }
 
   if (password !== confirmPassword) {
-    return { success: false, error: "비밀번호가 일치하지 않습니다." };
+    return { success: false, error: "비밀번호가 일치하지 않습니다.", inputs };
   }
 
   if (!agreedTerms) {
     return {
       success: false,
       error: "이용약관 및 개인정보 처리방침에 동의해 주세요.",
+      inputs,
     };
   }
 
@@ -97,7 +105,7 @@ export const signupAction = async (
     });
 
     if (error) {
-      return { success: false, error: translateSignupError(error.message) };
+      return { success: false, error: translateSignupError(error.message), inputs };
     }
 
     if (data.user) {
@@ -105,9 +113,9 @@ export const signupAction = async (
       return { success: true, needsVerification };
     }
 
-    return { success: false, error: "회원 가입에 실패했습니다." };
+    return { success: false, error: "회원 가입에 실패했습니다.", inputs };
   } catch {
-    return { success: false, error: "오류가 발생했습니다. 다시 시도해 주세요." };
+    return { success: false, error: "오류가 발생했습니다. 다시 시도해 주세요.", inputs };
   }
 };
 
