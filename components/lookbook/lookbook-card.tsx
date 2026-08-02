@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import HeartIcon from "@/components/icons/heart-icon";
 import TagPinIcon from "@/components/icons/tag-pin-icon";
-import { MOCK_PRODUCTS } from "@/lib/data/mock-products";
+import { getProductById } from "@/lib/api/products";
 import { LookbookItem, LookbookTagSpot, Product } from "@/types/product";
 
 // 로컬 헬퍼 1: 스마트 방향 처리 태그 상품 미니 팝오버
@@ -59,7 +59,7 @@ const TagProductPopover = ({
           닫기
         </button>
         <Link
-          href={`/products/detail?id=${product.id}`}
+          href={`/products/detail/${product.id}`}
           className="rounded-full bg-neutral-900 px-3 py-1 text-[11px] font-bold text-white transition-transform hover:scale-105"
         >
           상품 보기 →
@@ -80,7 +80,13 @@ const TagSpotPin = ({
   onSpotClick: (spotId: string) => void;
 }) => {
   const isSelected = activeSpotId === spot.id;
-  const product = MOCK_PRODUCTS.find((p) => p.id === spot.productId);
+  const [product, setProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    if (isSelected && spot.productId) {
+      getProductById(spot.productId).then((p) => setProduct(p || null));
+    }
+  }, [isSelected, spot.productId]);
 
   return (
     <div

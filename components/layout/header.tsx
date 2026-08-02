@@ -6,7 +6,6 @@ import CartIcon from "@/components/icons/cart-icon";
 import MenuIcon from "@/components/icons/menu-icon";
 import UserIcon from "@/components/icons/user-icon";
 import SearchAutocomplete from "@/components/layout/search-autocomplete";
-import { MOCK_CATEGORIES } from "@/lib/data/mock-products";
 import useAuth from "@/lib/hooks/use-auth";
 import { logoutAction } from "@/lib/actions/auth";
 import { useAuthStore } from "@/lib/store/use-auth-store";
@@ -14,6 +13,14 @@ import useHydrated from "@/lib/hooks/use-hydrated";
 import { useCartStore } from "@/lib/store/use-cart-store";
 import { usePathname, useSearchParams } from "next/navigation";
 import { buildAuthUrl } from "@/lib/utils/url";
+
+const CATEGORY_NAV_ITEMS = [
+  { id: "outer", name: "아우터" },
+  { id: "top", name: "상의" },
+  { id: "bottom", name: "하의" },
+  { id: "shoes", name: "신발" },
+  { id: "acc", name: "악세서리" },
+];
 
 // 로컬 헬퍼 1: 상단 안내 띠 배너
 const TopAnnouncementBar = () => {
@@ -34,7 +41,7 @@ const CategoryNavLinks = () => {
       >
         ALL
       </Link>
-      {MOCK_CATEGORIES.map((cat) => (
+      {CATEGORY_NAV_ITEMS.map((cat) => (
         <Link
           key={cat.id}
           href={`/products/${cat.id}`}
@@ -68,6 +75,7 @@ const UserNavMenuFallback = () => {
 
 const USER_MENU_ITEMS = [
   { label: "마이페이지", href: "/mypage" },
+  { label: "주문 / 배송 내역", href: "/mypage/orders" },
   { label: "위시리스트", href: "/mypage/wishlist" },
   { label: "배송지 관리", href: "/mypage/addresses" },
   { label: "최근 본 상품", href: "/mypage/recent" },

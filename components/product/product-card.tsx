@@ -36,7 +36,7 @@ const ProductPriceView = ({
 const ProductCard = ({ product }: { product: Product }) => {
   return (
     <Link
-      href={`/products/detail?id=${product.id}`}
+      href={`/products/detail/${product.id}`}
       className="group flex flex-col gap-2.5 transition-transform duration-200"
     >
       {/* Image Wrapper */}

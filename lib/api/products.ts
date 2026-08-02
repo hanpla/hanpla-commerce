@@ -1,7 +1,7 @@
 "use cache";
 
 import { cacheLife, cacheTag } from "next/cache";
-import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "@/lib/data/mock-products";
+import { createClient } from "@supabase/supabase-js";
 import {
   CategoryOption,
   Product,
@@ -12,18 +12,134 @@ import {
   SortOption,
 } from "@/types/product";
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  "";
+
+// DB Row interfaces for strict typing
+interface DbProductOptionRow {
+  color_name: string;
+  color_hex: string;
+  sizes: string[];
+}
+
+interface DbCategoryRow {
+  id: string;
+  name: string;
+  count: number | null;
+  image_url: string | null;
+}
+
+interface DbProductRow {
+  id: string;
+  name: string;
+  brand: string;
+  category: string;
+  price: number;
+  original_price: number | null;
+  discount_rate: number | null;
+  image_url: string;
+  images: string[] | null;
+  description: string;
+  rating: number | null;
+  review_count: number | null;
+  is_new: boolean | null;
+  is_best: boolean | null;
+  stock: number | null;
+  created_at: string | null;
+  product_options?: DbProductOptionRow[];
+}
+
+// 'use cache' 함수 내부에서 안전하게 실행되는 Supabase 정적 클라이언트 생성
+const getDbClient = () => {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+};
+
+// DB 행 데이터를 TypeScript Product 모델로 매핑하는 헬퍼 함수
+const mapRowToProduct = (row: DbProductRow): Product => {
+  const optionsMap = new Map<string, { color: ProductColor; sizes: Set<ProductSize> }>();
+
+  if (Array.isArray(row.product_options)) {
+    row.product_options.forEach((opt) => {
+      if (!opt.color_name) return;
+      const key = opt.color_name;
+      if (!optionsMap.has(key)) {
+        optionsMap.set(key, {
+          color: { name: opt.color_name, hex: opt.color_hex },
+          sizes: new Set<ProductSize>(),
+        });
+      }
+      if (Array.isArray(opt.sizes)) {
+        opt.sizes.forEach((sz) => optionsMap.get(key)!.sizes.add(sz as ProductSize));
+      }
+    });
+  }
+
+  const options = Array.from(optionsMap.values()).map((item) => ({
+    color: item.color,
+    sizes: Array.from(item.sizes),
+  }));
+
+  return {
+    id: row.id,
+    name: row.name,
+    brand: row.brand,
+    category: row.category as ProductCategory,
+    price: row.price,
+    originalPrice: row.original_price ?? undefined,
+    discountRate: row.discount_rate ?? undefined,
+    imageUrl: row.image_url,
+    images: Array.isArray(row.images) && row.images.length > 0 ? row.images : [row.image_url],
+    description: row.description || "",
+    options,
+    rating: Number(row.rating ?? 5),
+    reviewCount: row.review_count ?? 0,
+    isNew: row.is_new ?? false,
+    isBest: row.is_best ?? false,
+    stock: row.stock ?? 100,
+    createdAt: row.created_at || new Date().toISOString(),
+  };
+};
+
 export const getCategories = async (): Promise<CategoryOption[]> => {
   cacheLife("hours");
   cacheTag("categories");
 
-  return MOCK_CATEGORIES;
+  const supabase = getDbClient();
+  const { data, error } = await supabase.from("categories").select("*").order("name");
+
+  if (error || !data) {
+    return [];
+  }
+
+  return (data as DbCategoryRow[]).map((cat) => ({
+    id: cat.id as ProductCategory,
+    name: cat.name,
+    count: cat.count ?? 0,
+    imageUrl: cat.image_url ?? undefined,
+  }));
 };
 
 export const getCategoryById = async (id: ProductCategory): Promise<CategoryOption | undefined> => {
   cacheLife("hours");
   cacheTag("categories");
 
-  return MOCK_CATEGORIES.find((cat) => cat.id === id);
+  const supabase = getDbClient();
+  const { data, error } = await supabase.from("categories").select("*").eq("id", id).maybeSingle();
+
+  if (error || !data) {
+    return undefined;
+  }
+
+  const cat = data as DbCategoryRow;
+  return {
+    id: cat.id as ProductCategory,
+    name: cat.name,
+    count: cat.count ?? 0,
+    imageUrl: cat.image_url ?? undefined,
+  };
 };
 
 export const getProducts = async (options?: {
@@ -36,133 +152,145 @@ export const getProducts = async (options?: {
   cacheLife("hours");
   cacheTag("products");
 
-  let list = [...MOCK_PRODUCTS];
+  const supabase = getDbClient();
+  let query = supabase.from("products").select("*, product_options(*)");
 
   if (options?.category) {
-    list = list.filter((p) => p.category === options.category);
+    query = query.eq("category", options.category);
   }
 
   if (options?.featuredOnly) {
-    list = list.filter((p) => p.isBest);
+    query = query.eq("is_best", true);
   }
 
   if (options?.query) {
-    const q = options.query.toLowerCase();
-    list = list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
-    );
+    const q = options.query.trim();
+    query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`);
   }
 
-  if (options?.sort) {
-    switch (options.sort) {
-      case "popular":
-        list.sort((a, b) => b.reviewCount - a.reviewCount);
-        break;
-      case "price-low":
-        list.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        list.sort((a, b) => b.price - a.price);
-        break;
-      case "newest":
-      default:
-        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-    }
+  switch (options?.sort) {
+    case "popular":
+      query = query.order("review_count", { ascending: false });
+      break;
+    case "price-low":
+      query = query.order("price", { ascending: true });
+      break;
+    case "price-high":
+      query = query.order("price", { ascending: false });
+      break;
+    case "newest":
+    default:
+      query = query.order("created_at", { ascending: false });
+      break;
   }
 
   if (options?.limit) {
-    list = list.slice(0, options.limit);
+    query = query.limit(options.limit);
   }
 
-  return list;
+  const { data, error } = await query;
+
+  if (error || !data) {
+    return [];
+  }
+
+  return (data as DbProductRow[]).map(mapRowToProduct);
 };
 
-// O(1) Set 룩업 기반 성능 최적화 필터링 (Vercel Best Practice: js-set-map-lookups)
 export const getFilteredProducts = async (filters: ProductFilterState): Promise<Product[]> => {
   cacheLife("hours");
   cacheTag("products");
 
-  let list = [...MOCK_PRODUCTS];
+  const supabase = getDbClient();
+  let query = supabase.from("products").select("*, product_options(*)");
 
   if (filters.category) {
-    list = list.filter((p) => p.category === filters.category);
+    query = query.eq("category", filters.category);
   }
 
   if (filters.minPrice !== undefined) {
-    list = list.filter((p) => p.price >= (filters.minPrice ?? 0));
+    query = query.gte("price", filters.minPrice);
   }
 
   if (filters.maxPrice !== undefined) {
-    list = list.filter((p) => p.price <= (filters.maxPrice ?? Infinity));
+    query = query.lte("price", filters.maxPrice);
   }
 
   if (filters.brand && filters.brand.length > 0) {
-    const brandSet = new Set(filters.brand);
-    list = list.filter((p) => brandSet.has(p.brand));
+    query = query.in("brand", filters.brand);
   }
+
+  if (filters.searchQuery) {
+    const q = filters.searchQuery.trim();
+    query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`);
+  }
+
+  switch (filters.sort) {
+    case "popular":
+      query = query.order("review_count", { ascending: false });
+      break;
+    case "price-low":
+      query = query.order("price", { ascending: true });
+      break;
+    case "price-high":
+      query = query.order("price", { ascending: false });
+      break;
+    case "newest":
+    default:
+      query = query.order("created_at", { ascending: false });
+      break;
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    return [];
+  }
+
+  let products = (data as DbProductRow[]).map(mapRowToProduct);
 
   if (filters.color && filters.color.length > 0) {
     const colorSet = new Set(filters.color);
-    list = list.filter((p) => p.options.some((opt) => colorSet.has(opt.color.name)));
+    products = products.filter((p) => p.options.some((opt) => colorSet.has(opt.color.name)));
   }
 
   if (filters.size && filters.size.length > 0) {
     const sizeSet = new Set(filters.size);
-    list = list.filter((p) => p.options.some((opt) => opt.sizes.some((sz) => sizeSet.has(sz))));
-  }
-
-  if (filters.searchQuery) {
-    const q = filters.searchQuery.toLowerCase();
-    list = list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+    products = products.filter((p) =>
+      p.options.some((opt) => opt.sizes.some((sz) => sizeSet.has(sz)))
     );
   }
 
-  if (filters.sort) {
-    switch (filters.sort) {
-      case "popular":
-        list.sort((a, b) => b.reviewCount - a.reviewCount);
-        break;
-      case "price-low":
-        list.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        list.sort((a, b) => b.price - a.price);
-        break;
-      case "newest":
-      default:
-        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-    }
-  }
-
-  return list;
+  return products;
 };
 
-// 동적 필터 옵션(브랜드/컬러/사이즈) 집계 API
 export const getAvailableFilterOptions = async () => {
   cacheLife("hours");
   cacheTag("products");
+
+  const supabase = getDbClient();
+  const { data, error } = await supabase.from("products").select("brand, product_options(*)");
+
+  if (error || !data) {
+    return { brands: [], colors: [], sizes: [] };
+  }
 
   const brandSet = new Set<string>();
   const colorMap = new Map<string, ProductColor>();
   const sizeSet = new Set<ProductSize>();
 
-  MOCK_PRODUCTS.forEach((p) => {
-    brandSet.add(p.brand);
-    p.options.forEach((opt) => {
-      if (!colorMap.has(opt.color.name)) {
-        colorMap.set(opt.color.name, opt.color);
-      }
-      opt.sizes.forEach((sz) => sizeSet.add(sz));
-    });
+  (data as DbProductRow[]).forEach((row) => {
+    if (row.brand) brandSet.add(row.brand);
+    if (Array.isArray(row.product_options)) {
+      row.product_options.forEach((opt) => {
+        if (opt.color_name && !colorMap.has(opt.color_name)) {
+          colorMap.set(opt.color_name, { name: opt.color_name, hex: opt.color_hex });
+        }
+        if (Array.isArray(opt.sizes)) {
+          opt.sizes.forEach((sz) => sizeSet.add(sz as ProductSize));
+        }
+      });
+    }
   });
 
   return {
@@ -178,20 +306,37 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
 
   if (!query || query.trim() === "") return [];
 
-  const q = query.toLowerCase().trim();
-  return MOCK_PRODUCTS.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.brand.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q)
-  ).slice(0, 5);
+  const supabase = getDbClient();
+  const q = query.trim();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, product_options(*)")
+    .or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`)
+    .limit(5);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return (data as DbProductRow[]).map(mapRowToProduct);
 };
 
 export const getProductById = async (id: string): Promise<Product | undefined> => {
   cacheLife("hours");
   cacheTag(`product-${id}`, "products");
 
-  return MOCK_PRODUCTS.find((p) => p.id === id);
+  const supabase = getDbClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, product_options(*)")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return undefined;
+  }
+
+  return mapRowToProduct(data as DbProductRow);
 };
 
 export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
@@ -199,6 +344,16 @@ export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
   cacheTag("products");
 
   if (!ids || ids.length === 0) return [];
-  const idSet = new Set(ids);
-  return MOCK_PRODUCTS.filter((p) => idSet.has(p.id));
+
+  const supabase = getDbClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, product_options(*)")
+    .in("id", ids);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return (data as DbProductRow[]).map(mapRowToProduct);
 };

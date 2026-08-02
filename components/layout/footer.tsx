@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { MOCK_CATEGORIES } from "@/lib/data/mock-products";
 
 // 로컬 헬퍼: CS 센터 정보 카드
 const CustomerCenterInfo = () => {
@@ -42,10 +41,13 @@ const FooterLinkGroup = ({
 
 // 메인 풋터 컴포넌트
 const Footer = () => {
-  const categoryLinks = MOCK_CATEGORIES.map((c) => ({
-    label: c.name,
-    href: `/products/${c.id}`,
-  }));
+  const categoryLinks = [
+    { label: "아우터", href: "/products/outer" },
+    { label: "상의", href: "/products/top" },
+    { label: "하의", href: "/products/bottom" },
+    { label: "신발", href: "/products/shoes" },
+    { label: "악세서리", href: "/products/acc" },
+  ];
 
   const companyLinks = [
     { label: "회사소개", href: "#" },
