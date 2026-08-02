@@ -40,3 +40,7 @@ export interface AuthActionState {
   error?: string;
   needsVerification?: boolean;
 }
+
+export const AUTH_INITIAL_STATE: AuthActionState = {
+  success: false,
+};

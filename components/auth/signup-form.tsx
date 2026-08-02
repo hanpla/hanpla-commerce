@@ -7,8 +7,9 @@ import LockIcon from "@/components/icons/lock-icon";
 import UserIcon from "@/components/icons/user-icon";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import { signupAction, AUTH_INITIAL_STATE } from "@/lib/actions/auth";
+import { signupAction } from "@/lib/actions/auth";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { AUTH_INITIAL_STATE } from "@/types/user";
 
 const SignupForm = () => {
   const router = useRouter();

@@ -3,10 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AuthActionState } from "@/types/user";
 
-const AUTH_INITIAL_STATE: AuthActionState = {
-  success: false,
-};
-
 const translateLoginError = (message: string): string => {
   if (message.includes("Invalid login credentials")) {
     return "이메일 또는 비밀번호가 올바르지 않습니다.";
@@ -119,5 +115,3 @@ export const logoutAction = async (): Promise<void> => {
   const supabase = await createClient();
   await supabase.auth.signOut();
 };
-
-export { AUTH_INITIAL_STATE };
