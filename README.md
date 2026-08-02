@@ -4,10 +4,9 @@
 
 ---
 
-## 🔗 Live Demo & Report
+## 🔗 Live Demo & Database
 
 - **Vercel 실서버 배포 주소**: [https://hanpla-commerce.vercel.app](https://hanpla-commerce.vercel.app)
-- **Lighthouse 성능 최적화 보고서**: [docs/lighthouse_report.md](docs/lighthouse_report.md)
 - **Database DDL & RLS 보안 정책**: [supabase/schema.sql](supabase/schema.sql)
 
 ---
