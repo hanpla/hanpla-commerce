@@ -97,7 +97,7 @@ const Header = () => {
 
           <button
             onClick={store.openDrawer}
-            className="relative rounded-full p-2 text-neutral-800 transition-colors hover:bg-neutral-100"
+            className="relative cursor-pointer rounded-full p-2 text-neutral-800 transition-colors hover:bg-neutral-100"
             aria-label="장바구니"
           >
             <CartIcon className="h-6 w-6" />
