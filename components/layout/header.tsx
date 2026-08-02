@@ -5,6 +5,7 @@ import CartIcon from "@/components/icons/cart-icon";
 import MenuIcon from "@/components/icons/menu-icon";
 import SearchAutocomplete from "@/components/layout/search-autocomplete";
 import UserNavMenu from "@/components/layout/user-nav-menu";
+import useAuth from "@/lib/hooks/use-auth";
 import useHydrated from "@/lib/hooks/use-hydrated";
 import { useCartStore } from "@/lib/store/use-cart-store";
 
@@ -16,8 +17,12 @@ const CATEGORY_NAV_ITEMS = [
   { id: "acc", name: "악세서리" },
 ];
 
-// 로컬 헬퍼 1: 상단 안내 띠 배너
+// 로컬 헬퍼 1: 상단 안내 띠 배너 (비회원에게만 노출)
 const TopAnnouncementBar = () => {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) return null;
+
   return (
     <div className="bg-neutral-900 px-4 py-1.5 text-center text-xs font-medium text-white">
       <span>✨ 신규 회원 가입 시 10% 웰컴 쿠폰 즉시 발급 | 5만원 이상 무료배송</span>
