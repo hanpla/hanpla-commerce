@@ -5,6 +5,8 @@ import Link from "next/link";
 import StarIcon from "@/components/icons/star-icon";
 import WishlistButton from "@/components/product/wishlist-button";
 import Badge from "@/components/ui/badge";
+import { formatPrice } from "@/lib/utils/format";
+import { getBlurDataURL } from "@/lib/utils/image";
 import { Product } from "@/types/product";
 
 // 로컬 헬퍼: 상품 가격 표시부
@@ -22,10 +24,10 @@ const ProductPriceView = ({
       {discountRate ? (
         <span className="text-sm font-extrabold text-rose-600">{discountRate}%</span>
       ) : null}
-      <span className="text-base font-extrabold text-neutral-900">{price.toLocaleString()}원</span>
+      <span className="text-base font-extrabold text-neutral-900">{formatPrice(price)}</span>
       {originalPrice ? (
         <span className="text-xs font-normal text-neutral-400 line-through">
-          {originalPrice.toLocaleString()}원
+          {formatPrice(originalPrice)}
         </span>
       ) : null}
     </div>
@@ -45,6 +47,8 @@ const ProductCard = ({ product }: { product: Product }) => {
           src={product.imageUrl}
           alt={product.name}
           fill
+          placeholder="blur"
+          blurDataURL={getBlurDataURL(300, 400)}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />

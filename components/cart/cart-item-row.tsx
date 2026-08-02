@@ -1,7 +1,9 @@
+import { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CloseIcon from "@/components/icons/close-icon";
 import Badge from "@/components/ui/badge";
+import { getBlurDataURL } from "@/lib/utils/image";
 import { CartItem } from "@/types/cart";
 
 type CartItemRowProps = {
@@ -17,7 +19,7 @@ const QuantityStepButton = ({
   children,
 }: {
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) => {
   return (
     <button
@@ -67,6 +69,8 @@ const CartItemRow = ({ item, onToggleSelect, onUpdateQuantity, onRemove }: CartI
             src={product.imageUrl}
             alt={product.name}
             fill
+            placeholder="blur"
+            blurDataURL={getBlurDataURL(80, 100)}
             sizes="80px"
             className="object-cover"
           />

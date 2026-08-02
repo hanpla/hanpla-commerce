@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { getBlurDataURL } from "@/lib/utils/image";
 
 type ImageGalleryProps = {
   images: string[];
@@ -29,7 +30,15 @@ const ThumbnailButton = ({
           : "border-transparent opacity-70 hover:opacity-100"
       }`}
     >
-      <Image src={img} alt={altText} fill className="object-cover" />
+      <Image
+        src={img}
+        alt={altText}
+        fill
+        sizes="80px"
+        placeholder="blur"
+        blurDataURL={getBlurDataURL(80, 100)}
+        className="object-cover"
+      />
     </button>
   );
 };
@@ -46,6 +55,8 @@ const ImageGallery = ({ images, productName }: ImageGalleryProps) => {
           alt={productName}
           fill
           priority
+          placeholder="blur"
+          blurDataURL={getBlurDataURL(600, 800)}
           sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover transition-all duration-300"
         />

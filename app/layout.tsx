@@ -1,8 +1,11 @@
+import { ReactNode } from "react";
 import type { Metadata } from "next";
-import CartDrawer from "@/components/layout/cart-drawer";
+import dynamic from "next/dynamic";
 import Footer from "@/components/layout/footer";
 import Header from "@/components/layout/header";
 import "./globals.css";
+
+const CartDrawer = dynamic(() => import("@/components/layout/cart-drawer"));
 
 export const metadata: Metadata = {
   title: "Hanpla Commerce | Premium Fashion Store",
@@ -13,10 +16,14 @@ export const metadata: Metadata = {
 const RootLayout = ({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) => {
   return (
     <html lang="ko">
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+      </head>
       <body className="flex min-h-screen flex-col bg-white font-sans text-neutral-900 antialiased selection:bg-neutral-900 selection:text-white">
         <Header />
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CartIcon from "@/components/icons/cart-icon";
@@ -8,6 +9,7 @@ import Button from "@/components/ui/button";
 import useHydrated from "@/lib/hooks/use-hydrated";
 import { useCartStore } from "@/lib/store/use-cart-store";
 import { calculateCartSummary } from "@/lib/utils/cart";
+import { getBlurDataURL } from "@/lib/utils/image";
 import { CartItem } from "@/types/cart";
 
 // 로컬 헬퍼 1: 드로어 백드롭
@@ -26,7 +28,7 @@ const QuantityStepButton = ({
   children,
 }: {
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) => {
   return (
     <button
@@ -57,6 +59,8 @@ const CartDrawerItem = ({
           src={product.imageUrl}
           alt={product.name}
           fill
+          placeholder="blur"
+          blurDataURL={getBlurDataURL(80, 100)}
           sizes="80px"
           className="object-cover"
         />

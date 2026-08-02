@@ -10,6 +10,8 @@ import Button from "@/components/ui/button";
 import { MOCK_BANNERS } from "@/lib/data/mock-products";
 import { Banner } from "@/types/product";
 
+import { getBlurDataURL } from "@/lib/utils/image";
+
 // 로컬 헬퍼 1: 캐러셀 슬라이드 닷 인디케이터
 const CarouselIndicators = ({
   total,
@@ -80,6 +82,8 @@ const CarouselSlide = ({ banner }: { banner: Banner }) => {
         alt={banner.title}
         fill
         priority
+        placeholder="blur"
+        blurDataURL={getBlurDataURL(1200, 600)}
         sizes="100vw"
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />

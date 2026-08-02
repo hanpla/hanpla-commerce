@@ -6,6 +6,7 @@ import Link from "next/link";
 import HeartIcon from "@/components/icons/heart-icon";
 import TagPinIcon from "@/components/icons/tag-pin-icon";
 import { getProductById } from "@/lib/api/products";
+import { getBlurDataURL } from "@/lib/utils/image";
 import { LookbookItem, LookbookTagSpot, Product } from "@/types/product";
 
 // 로컬 헬퍼 1: 스마트 방향 처리 태그 상품 미니 팝오버
@@ -39,7 +40,15 @@ const TagProductPopover = ({
     >
       <div className="flex gap-3">
         <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
-          <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            sizes="56px"
+            placeholder="blur"
+            blurDataURL={getBlurDataURL(56, 56)}
+            className="object-cover"
+          />
         </div>
         <div className="min-w-0 flex-1">
           <span className="text-[10px] font-bold tracking-wider text-neutral-400 uppercase">
@@ -138,6 +147,8 @@ const LookbookCard = ({ lookbook }: { lookbook: LookbookItem }) => {
             src={lookbook.imageUrl}
             alt={lookbook.title}
             fill
+            placeholder="blur"
+            blurDataURL={getBlurDataURL(400, 500)}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition-transform duration-700 group-hover:scale-102"
           />

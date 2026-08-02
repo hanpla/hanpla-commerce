@@ -18,3 +18,8 @@ export const formatZipcode = (value: string): string => {
   if (!value) return "";
   return value.replace(/[^0-9]/g, "").slice(0, 5);
 };
+
+export const formatPrice = (price: number): string => {
+  if (typeof price !== "number" || isNaN(price)) return "0원";
+  return `${price.toLocaleString()}원`;
+};

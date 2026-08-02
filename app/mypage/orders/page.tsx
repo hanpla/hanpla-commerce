@@ -8,6 +8,7 @@ import OrdersSkeleton from "@/components/mypage/orders-skeleton";
 import Button from "@/components/ui/button";
 import { fetchUserOrdersFromDb } from "@/lib/api/orders-db";
 import useAuth from "@/lib/hooks/use-auth";
+import { getBlurDataURL } from "@/lib/utils/image";
 import { Order, OrderItem } from "@/types/order";
 
 // 로컬 헬퍼 1: 주문 내역 상품 행
@@ -19,6 +20,8 @@ const OrderItemRow = ({ item }: { item: OrderItem }) => {
           src={item.productImage}
           alt={item.productName}
           fill
+          placeholder="blur"
+          blurDataURL={getBlurDataURL(56, 56)}
           className="object-cover"
           sizes="56px"
         />

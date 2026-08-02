@@ -1,5 +1,6 @@
 "use cache";
 
+import { cache } from "react";
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -103,7 +104,7 @@ const mapRowToProduct = (row: DbProductRow): Product => {
   };
 };
 
-export const getCategories = async (): Promise<CategoryOption[]> => {
+export const getCategories = cache(async (): Promise<CategoryOption[]> => {
   cacheLife("hours");
   cacheTag("categories");
 
@@ -120,27 +121,33 @@ export const getCategories = async (): Promise<CategoryOption[]> => {
     count: cat.count ?? 0,
     imageUrl: cat.image_url ?? undefined,
   }));
-};
+});
 
-export const getCategoryById = async (id: ProductCategory): Promise<CategoryOption | undefined> => {
-  cacheLife("hours");
-  cacheTag("categories");
+export const getCategoryById = cache(
+  async (id: ProductCategory): Promise<CategoryOption | undefined> => {
+    cacheLife("hours");
+    cacheTag("categories");
 
-  const supabase = getDbClient();
-  const { data, error } = await supabase.from("categories").select("*").eq("id", id).maybeSingle();
+    const supabase = getDbClient();
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-  if (error || !data) {
-    return undefined;
+    if (error || !data) {
+      return undefined;
+    }
+
+    const cat = data as DbCategoryRow;
+    return {
+      id: cat.id as ProductCategory,
+      name: cat.name,
+      count: cat.count ?? 0,
+      imageUrl: cat.image_url ?? undefined,
+    };
   }
-
-  const cat = data as DbCategoryRow;
-  return {
-    id: cat.id as ProductCategory,
-    name: cat.name,
-    count: cat.count ?? 0,
-    imageUrl: cat.image_url ?? undefined,
-  };
-};
+);
 
 export const getProducts = async (options?: {
   category?: ProductCategory;
@@ -301,10 +308,10 @@ export const getAvailableFilterOptions = async () => {
 };
 
 export const searchProducts = async (query: string): Promise<Product[]> => {
+  if (!query || query.trim() === "") return [];
+
   cacheLife("hours");
   cacheTag("products");
-
-  if (!query || query.trim() === "") return [];
 
   const supabase = getDbClient();
   const q = query.trim();
@@ -321,7 +328,9 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
   return (data as DbProductRow[]).map(mapRowToProduct);
 };
 
-export const getProductById = async (id: string): Promise<Product | undefined> => {
+export const getProductById = cache(async (id: string): Promise<Product | undefined> => {
+  if (!id) return undefined;
+
   cacheLife("hours");
   cacheTag(`product-${id}`, "products");
 
@@ -337,13 +346,13 @@ export const getProductById = async (id: string): Promise<Product | undefined> =
   }
 
   return mapRowToProduct(data as DbProductRow);
-};
+});
 
 export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
+  if (!ids || ids.length === 0) return [];
+
   cacheLife("hours");
   cacheTag("products");
-
-  if (!ids || ids.length === 0) return [];
 
   const supabase = getDbClient();
   const { data, error } = await supabase

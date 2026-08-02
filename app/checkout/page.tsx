@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import CheckoutOrderSummary from "@/components/checkout/checkout-order-summary";
 import DeliverySection, { DeliveryInfo } from "@/components/checkout/delivery-section";
-import PaymentButton from "@/components/checkout/payment-button";
 import useHydrated from "@/lib/hooks/use-hydrated";
 import { useCartStore } from "@/lib/store/use-cart-store";
 import { calculateCartSummary } from "@/lib/utils/cart";
+
+const PaymentButton = dynamic(() => import("@/components/checkout/payment-button"), {
+  ssr: false,
+});
 
 const CheckoutPage = () => {
   const store = useCartStore();

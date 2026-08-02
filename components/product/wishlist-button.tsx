@@ -1,5 +1,6 @@
 "use client";
 
+import { MouseEvent } from "react";
 import HeartIcon from "@/components/icons/heart-icon";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
 
@@ -11,7 +12,7 @@ interface WishlistButtonProps {
 const WishlistButton = ({ productId, className }: WishlistButtonProps) => {
   const { isWishlisted, toggleWishlist } = useWishlist(productId);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleWishlist();

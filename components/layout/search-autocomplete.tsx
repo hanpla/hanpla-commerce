@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SearchIcon from "@/components/icons/search-icon";
 import { searchProducts } from "@/lib/api/products";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { getBlurDataURL } from "@/lib/utils/image";
 import { Product } from "@/types/product";
 
 // 로컬 헬퍼: 추천 검색 결과 드롭다운 아이템
@@ -22,6 +23,8 @@ const AutocompleteItem = ({ product, onClick }: { product: Product; onClick: () 
           src={product.imageUrl}
           alt={product.name}
           fill
+          placeholder="blur"
+          blurDataURL={getBlurDataURL(40, 40)}
           className="object-cover"
           sizes="40px"
         />
@@ -82,7 +85,7 @@ const SearchAutocomplete = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
       setIsOpen(false);

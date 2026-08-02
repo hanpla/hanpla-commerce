@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Modal from "@/components/ui/modal";
@@ -24,7 +24,7 @@ const AddressModal = ({ isOpen, onClose, onSave, initialData }: AddressModalProp
   const [addressDetail, setAddressDetail] = useState(initialData?.addressDetail || "");
   const [isDefault, setIsDefault] = useState(initialData?.isDefault || false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!name || !recipient || !phone || !address) return;
 

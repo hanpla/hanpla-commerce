@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getCategories } from "@/lib/api/products";
+import { getBlurDataURL } from "@/lib/utils/image";
 import { CategoryOption } from "@/types/product";
 
 // 로컬 헬퍼: 단일 비주얼 카테고리 카드
@@ -15,6 +16,9 @@ const VisualCategoryCard = ({ category }: { category: CategoryOption }) => {
           src={category.imageUrl}
           alt={category.name}
           fill
+          priority={category.id === "outer"}
+          placeholder="blur"
+          blurDataURL={getBlurDataURL(400, 500)}
           sizes="(max-width: 640px) 50vw, 20vw"
           className="object-cover transition-transform duration-700 group-hover:scale-110"
         />

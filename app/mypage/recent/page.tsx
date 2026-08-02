@@ -6,6 +6,7 @@ import EyeIcon from "@/components/icons/eye-icon";
 import Button from "@/components/ui/button";
 import useRecentViewed from "@/lib/hooks/use-recent-viewed";
 import { useCartStore } from "@/lib/store/use-cart-store";
+import { getBlurDataURL } from "@/lib/utils/image";
 
 const RecentPage = () => {
   const { items, removeRecentProduct, clearAll } = useRecentViewed();
@@ -62,6 +63,9 @@ const RecentPage = () => {
                     src={product.imageUrl}
                     alt={product.name}
                     fill
+                    placeholder="blur"
+                    blurDataURL={getBlurDataURL(300, 300)}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
