@@ -11,21 +11,34 @@ import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { loginAction } from "@/lib/actions/auth";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { getSafeRedirectPath } from "@/lib/utils/url";
 import { AUTH_INITIAL_STATE } from "@/types/user";
 
 const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/mypage";
+  const redirectToParam = searchParams.get("redirectTo");
 
   const [state, formAction, pending] = useActionState(loginAction, AUTH_INITIAL_STATE);
 
   useEffect(() => {
     if (state.success) {
       useAuthStore.getState().fetchSession();
-      router.push(redirectTo);
+      const safePath = getSafeRedirectPath(redirectToParam, "");
+      if (safePath) {
+        router.push(safePath);
+      } else if (
+        typeof window !== "undefined" &&
+        document.referrer &&
+        !document.referrer.includes("/login") &&
+        !document.referrer.includes("/signup")
+      ) {
+        router.back();
+      } else {
+        router.push("/");
+      }
     }
-  }, [state.success, router, redirectTo]);
+  }, [state.success, router, redirectToParam]);
 
   const handleSocialLogin = (provider: "google" | "kakao") => {
     alert(
@@ -130,7 +143,7 @@ const LoginForm = () => {
       <div className="mt-8 text-center text-xs font-medium text-neutral-500">
         아직 회원이 아니신가요?{" "}
         <Link
-          href={`/signup${redirectTo ? `?redirectTo=${redirectTo}` : ""}`}
+          href={`/signup${redirectToParam ? `?redirectTo=${encodeURIComponent(redirectToParam)}` : ""}`}
           className="font-bold text-neutral-900 underline underline-offset-4 hover:text-neutral-600"
         >
           회원가입 하기

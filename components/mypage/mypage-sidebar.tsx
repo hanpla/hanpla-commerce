@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { label: "회원정보 수정", href: "/mypage/profile", icon: UserIcon },
   { label: "배송지 관리", href: "/mypage/addresses", icon: MapPinIcon },
   { label: "최근 본 상품", href: "/mypage/recent", icon: EyeIcon },
-  { label: "위시리스트", href: "/products", icon: HeartIcon },
+  { label: "위시리스트", href: "/mypage/wishlist", icon: HeartIcon },
   { label: "주문 / 배송 내역", href: "/mypage/orders", icon: PackageIcon },
 ];
 

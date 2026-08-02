@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
 import CartIcon from "@/components/icons/cart-icon";
 import MenuIcon from "@/components/icons/menu-icon";
@@ -12,6 +12,8 @@ import { logoutAction } from "@/lib/actions/auth";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 import useHydrated from "@/lib/hooks/use-hydrated";
 import { useCartStore } from "@/lib/store/use-cart-store";
+import { usePathname, useSearchParams } from "next/navigation";
+import { buildAuthUrl } from "@/lib/utils/url";
 
 // 로컬 헬퍼 1: 상단 안내 띠 배너
 const TopAnnouncementBar = () => {
@@ -51,11 +53,28 @@ const CategoryNavLinks = () => {
   );
 };
 
-// 로컬 헬퍼 3: 사용자 메뉴 드롭다운
-const UserNavMenu = () => {
+// 로컬 헬퍼 3: 사용자 메뉴 fallback
+const UserNavMenuFallback = () => {
+  return (
+    <Link
+      href="/login"
+      className="flex items-center gap-1.5 rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-bold text-neutral-800 transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white"
+    >
+      <UserIcon className="h-4 w-4" />
+      <span>로그인</span>
+    </Link>
+  );
+};
+
+// 로컬 헬퍼 4: 사용자 메뉴 콘텐츠 (useSearchParams 사용)
+const UserNavMenuContent = () => {
   const { user, isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const loginHref = buildAuthUrl("/login", pathname, searchParams.toString());
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -70,7 +89,7 @@ const UserNavMenu = () => {
   if (!isAuthenticated) {
     return (
       <Link
-        href="/login"
+        href={loginHref}
         className="flex items-center gap-1.5 rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-bold text-neutral-800 transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white"
       >
         <UserIcon className="h-4 w-4" />
@@ -105,6 +124,13 @@ const UserNavMenu = () => {
               마이페이지
             </Link>
             <Link
+              href="/mypage/wishlist"
+              onClick={() => setIsOpen(false)}
+              className="block rounded-xl px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+            >
+              위시리스트
+            </Link>
+            <Link
               href="/mypage/addresses"
               onClick={() => setIsOpen(false)}
               className="block rounded-xl px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
@@ -135,6 +161,15 @@ const UserNavMenu = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// 메인 사용자 메뉴 드롭다운 (Suspense 바운더리 감싸기)
+const UserNavMenu = () => {
+  return (
+    <Suspense fallback={<UserNavMenuFallback />}>
+      <UserNavMenuContent />
+    </Suspense>
   );
 };
 

@@ -69,7 +69,7 @@ const MyPageDashboard = () => {
         </Link>
 
         <Link
-          href="/products"
+          href="/mypage/wishlist"
           className="group rounded-2xl border border-neutral-200 bg-white p-5 transition-all hover:border-neutral-900 hover:shadow-md"
         >
           <div className="flex items-center justify-between text-neutral-400 group-hover:text-neutral-900">

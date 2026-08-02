@@ -9,12 +9,13 @@ import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { signupAction } from "@/lib/actions/auth";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { getSafeRedirectPath } from "@/lib/utils/url";
 import { AUTH_INITIAL_STATE } from "@/types/user";
 
 const SignupForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/mypage";
+  const redirectToParam = searchParams.get("redirectTo");
 
   const [state, formAction, pending] = useActionState(signupAction, AUTH_INITIAL_STATE);
 
@@ -24,9 +25,21 @@ const SignupForm = () => {
         alert("회원가입 확인 이메일이 전송되었습니다. 이메일 수신함을 확인해 주세요!");
       }
       useAuthStore.getState().fetchSession();
-      router.push(redirectTo);
+      const safePath = getSafeRedirectPath(redirectToParam, "");
+      if (safePath) {
+        router.push(safePath);
+      } else if (
+        typeof window !== "undefined" &&
+        document.referrer &&
+        !document.referrer.includes("/login") &&
+        !document.referrer.includes("/signup")
+      ) {
+        router.back();
+      } else {
+        router.push("/");
+      }
     }
-  }, [state.success, state.needsVerification, router, redirectTo]);
+  }, [state.success, state.needsVerification, router, redirectToParam]);
 
   return (
     <div className="w-full max-w-md rounded-3xl border border-neutral-200/80 bg-white/90 p-8 shadow-xl backdrop-blur-md">
@@ -131,7 +144,7 @@ const SignupForm = () => {
       <div className="mt-6 text-center text-xs font-medium text-neutral-500">
         이미 계정이 있으신가요?{" "}
         <Link
-          href={`/login${redirectTo ? `?redirectTo=${redirectTo}` : ""}`}
+          href={`/login${redirectToParam ? `?redirectTo=${encodeURIComponent(redirectToParam)}` : ""}`}
           className="font-bold text-neutral-900 underline underline-offset-4 hover:text-neutral-600"
         >
           로그인 하기
