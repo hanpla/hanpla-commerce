@@ -50,73 +50,87 @@ CREATE TABLE IF NOT EXISTS public.addresses (
 );
 
 -- ========================================================
--- RLS (Row Level Security) Policies
+-- RLS (Row Level Security) Policies (재실행 가능 멱등성 보장)
 -- ========================================================
 
--- Enable RLS on profiles
+-- Profiles RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 CREATE POLICY "Users can view their own profile"
     ON public.profiles FOR SELECT
     USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile"
     ON public.profiles FOR INSERT
     WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile"
     ON public.profiles FOR UPDATE
     USING (auth.uid() = id);
 
--- Enable RLS on cart_items
+-- Cart Items RLS
 ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own cart items" ON public.cart_items;
 CREATE POLICY "Users can view their own cart items"
     ON public.cart_items FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own cart items" ON public.cart_items;
 CREATE POLICY "Users can insert their own cart items"
     ON public.cart_items FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own cart items" ON public.cart_items;
 CREATE POLICY "Users can update their own cart items"
     ON public.cart_items FOR UPDATE
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own cart items" ON public.cart_items;
 CREATE POLICY "Users can delete their own cart items"
     ON public.cart_items FOR DELETE
     USING (auth.uid() = user_id);
 
--- Enable RLS on wishlist_items
+-- Wishlist Items RLS
 ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own wishlist items" ON public.wishlist_items;
 CREATE POLICY "Users can view their own wishlist items"
     ON public.wishlist_items FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own wishlist items" ON public.wishlist_items;
 CREATE POLICY "Users can insert their own wishlist items"
     ON public.wishlist_items FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own wishlist items" ON public.wishlist_items;
 CREATE POLICY "Users can delete their own wishlist items"
     ON public.wishlist_items FOR DELETE
     USING (auth.uid() = user_id);
 
--- Enable RLS on addresses
+-- Addresses RLS
 ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own addresses" ON public.addresses;
 CREATE POLICY "Users can view their own addresses"
     ON public.addresses FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own addresses" ON public.addresses;
 CREATE POLICY "Users can insert their own addresses"
     ON public.addresses FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own addresses" ON public.addresses;
 CREATE POLICY "Users can update their own addresses"
     ON public.addresses FOR UPDATE
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own addresses" ON public.addresses;
 CREATE POLICY "Users can delete their own addresses"
     ON public.addresses FOR DELETE
     USING (auth.uid() = user_id);
