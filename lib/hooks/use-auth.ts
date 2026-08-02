@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import useHydrated from "@/lib/hooks/use-hydrated";
+import useSyncUserData from "@/lib/hooks/use-sync-user-data";
 import { useAuthStore } from "@/lib/store/use-auth-store";
-import { useCartStore } from "@/lib/store/use-cart-store";
-import { useWishlistStore } from "@/lib/store/use-wishlist-store";
 import { createClient } from "@/lib/supabase/client";
 
 export const useAuth = () => {
   const isHydrated = useHydrated();
   const authState = useAuthStore();
+
+  useSyncUserData(isHydrated ? authState.user?.id : null);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -30,24 +31,11 @@ export const useAuth = () => {
     };
   }, [isHydrated]);
 
-  useEffect(() => {
-    if (isHydrated && authState.user?.id) {
-      useCartStore.getState().loadUserCart(authState.user.id);
-      useWishlistStore.getState().loadUserWishlist(authState.user.id);
-      useAuthStore.getState().loadUserAddresses(authState.user.id);
-    }
-  }, [isHydrated, authState.user?.id]);
-
   return {
     user: isHydrated ? authState.user : null,
-    addresses: isHydrated ? authState.addresses : [],
     isLoading: !isHydrated || authState.isLoading,
     isAuthenticated: isHydrated && !!authState.user,
     fetchSession: authState.fetchSession,
-    addAddress: authState.addAddress,
-    updateAddress: authState.updateAddress,
-    deleteAddress: authState.deleteAddress,
-    setDefaultAddress: authState.setDefaultAddress,
   };
 };
 

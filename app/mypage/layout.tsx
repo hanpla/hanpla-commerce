@@ -1,9 +1,22 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
+import { redirect } from "next/navigation";
 import MyPageSidebar from "@/components/mypage/mypage-sidebar";
+import MyPageSidebarSkeleton from "@/components/mypage/mypage-sidebar-skeleton";
+import { getUserServer } from "@/lib/auth/user";
 
 export const metadata = {
   title: "마이페이지 | Hanpla Commerce",
   description: "Hanpla Commerce 마이페이지입니다.",
+};
+
+const MyPageSidebarServer = async () => {
+  const user = await getUserServer();
+
+  if (!user) {
+    redirect("/login?redirectTo=/mypage");
+  }
+
+  return <MyPageSidebar user={user} />;
 };
 
 const MyPageLayout = ({ children }: { children: ReactNode }) => {
@@ -17,7 +30,9 @@ const MyPageLayout = ({ children }: { children: ReactNode }) => {
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">
-        <MyPageSidebar />
+        <Suspense fallback={<MyPageSidebarSkeleton />}>
+          <MyPageSidebarServer />
+        </Suspense>
         <main className="flex-1 rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-sm sm:p-8">
           {children}
         </main>

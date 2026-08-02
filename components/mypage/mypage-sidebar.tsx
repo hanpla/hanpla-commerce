@@ -11,6 +11,8 @@ import useAuth from "@/lib/hooks/use-auth";
 import { logoutAction } from "@/lib/actions/auth";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 
+import { UserProfile } from "@/types/user";
+
 const NAV_ITEMS = [
   { label: "마이페이지 홈", href: "/mypage", icon: UserIcon },
   { label: "회원정보 수정", href: "/mypage/profile", icon: UserIcon },
@@ -20,10 +22,15 @@ const NAV_ITEMS = [
   { label: "주문 / 배송 내역", href: "/mypage/orders", icon: PackageIcon },
 ];
 
-const MyPageSidebar = () => {
+interface MyPageSidebarProps {
+  user?: UserProfile | null;
+}
+
+const MyPageSidebar = ({ user: initialUser }: MyPageSidebarProps) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: clientUser } = useAuth();
+  const user = initialUser !== undefined ? initialUser : clientUser;
 
   const handleLogout = async () => {
     await logoutAction();

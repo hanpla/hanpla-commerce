@@ -193,3 +193,12 @@ export const getProductById = async (id: string): Promise<Product | undefined> =
 
   return MOCK_PRODUCTS.find((p) => p.id === id);
 };
+
+export const getProductsByIds = async (ids: string[]): Promise<Product[]> => {
+  cacheLife("hours");
+  cacheTag("products");
+
+  if (!ids || ids.length === 0) return [];
+  const idSet = new Set(ids);
+  return MOCK_PRODUCTS.filter((p) => idSet.has(p.id));
+};

@@ -66,9 +66,17 @@ const UserNavMenuFallback = () => {
   );
 };
 
+const USER_MENU_ITEMS = [
+  { label: "마이페이지", href: "/mypage" },
+  { label: "위시리스트", href: "/mypage/wishlist" },
+  { label: "배송지 관리", href: "/mypage/addresses" },
+  { label: "최근 본 상품", href: "/mypage/recent" },
+];
+
 // 로컬 헬퍼 4: 사용자 메뉴 콘텐츠 (useSearchParams 사용)
 const UserNavMenuContent = () => {
   const { user, isAuthenticated } = useAuth();
+
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -116,34 +124,16 @@ const UserNavMenuContent = () => {
           </div>
 
           <div className="py-1">
-            <Link
-              href="/mypage"
-              onClick={() => setIsOpen(false)}
-              className="block rounded-xl px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
-            >
-              마이페이지
-            </Link>
-            <Link
-              href="/mypage/wishlist"
-              onClick={() => setIsOpen(false)}
-              className="block rounded-xl px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
-            >
-              위시리스트
-            </Link>
-            <Link
-              href="/mypage/addresses"
-              onClick={() => setIsOpen(false)}
-              className="block rounded-xl px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
-            >
-              배송지 관리
-            </Link>
-            <Link
-              href="/mypage/recent"
-              onClick={() => setIsOpen(false)}
-              className="block rounded-xl px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
-            >
-              최근 본 상품
-            </Link>
+            {USER_MENU_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+                className="block rounded-xl px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
 
           <div className="border-t border-neutral-100 pt-1">

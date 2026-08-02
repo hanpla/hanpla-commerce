@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import HeartIcon from "@/components/icons/heart-icon";
 import ProductCard from "@/components/product/product-card";
 import WishlistSkeleton from "@/components/mypage/wishlist-skeleton";
-import { getProducts } from "@/lib/api/products";
+import { getProductsByIds } from "@/lib/api/products";
 import useHydrated from "@/lib/hooks/use-hydrated";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { Product } from "@/types/product";
@@ -13,20 +13,28 @@ import { Product } from "@/types/product";
 const WishlistPage = () => {
   const isHydrated = useHydrated();
   const { wishlistIds, wishlistCount } = useWishlist();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [wishlistedProducts, setWishlistedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
-    const loadProducts = async () => {
-      try {
-        const products = await getProducts();
+    const loadWishlistProducts = async () => {
+      if (!wishlistIds || wishlistIds.length === 0) {
         if (isMounted) {
-          setAllProducts(products);
+          setWishlistedProducts([]);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const products = await getProductsByIds(wishlistIds);
+        if (isMounted) {
+          setWishlistedProducts(products);
         }
       } catch {
         if (isMounted) {
-          setAllProducts([]);
+          setWishlistedProducts([]);
         }
       } finally {
         if (isMounted) {
@@ -35,17 +43,11 @@ const WishlistPage = () => {
       }
     };
 
-    loadProducts();
+    loadWishlistProducts();
     return () => {
       isMounted = false;
     };
-  }, []);
-
-  const wishlistedProducts = useMemo(() => {
-    if (!wishlistIds || wishlistIds.length === 0) return [];
-    const wishlistSet = new Set(wishlistIds);
-    return allProducts.filter((p) => wishlistSet.has(p.id));
-  }, [allProducts, wishlistIds]);
+  }, [wishlistIds]);
 
   if (!isHydrated || isLoading) {
     return <WishlistSkeleton />;

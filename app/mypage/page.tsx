@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import EyeIcon from "@/components/icons/eye-icon";
 import HeartIcon from "@/components/icons/heart-icon";
@@ -9,11 +10,43 @@ import Badge from "@/components/ui/badge";
 import useAuth from "@/lib/hooks/use-auth";
 import useRecentViewed from "@/lib/hooks/use-recent-viewed";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
+import { fetchUserAddressesFromDb } from "@/lib/api/address-db";
+import { DeliveryAddress } from "@/types/user";
 
 const MyPageDashboard = () => {
-  const { user, addresses } = useAuth();
+  const { user } = useAuth();
   const { items: recentItems } = useRecentViewed();
   const { wishlistCount } = useWishlist();
+  const [addresses, setAddresses] = useState<DeliveryAddress[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAddresses = async () => {
+      if (!user?.id) {
+        if (isMounted) {
+          setAddresses([]);
+        }
+        return;
+      }
+
+      try {
+        const dbAddresses = await fetchUserAddressesFromDb(user.id);
+        if (isMounted) {
+          setAddresses(dbAddresses);
+        }
+      } catch {
+        if (isMounted) {
+          setAddresses([]);
+        }
+      }
+    };
+
+    loadAddresses();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   return (
     <div className="space-y-8">
