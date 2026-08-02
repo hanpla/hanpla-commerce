@@ -1,0 +1,123 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import HeartIcon from "@/components/icons/heart-icon";
+import StarIcon from "@/components/icons/star-icon";
+import Badge from "@/components/ui/badge";
+import { Product } from "@/types/product";
+
+// 로컬 헬퍼: 위시리스트 토글 버튼
+const WishlistButton = ({
+  isLiked,
+  onToggle,
+}: {
+  isLiked: boolean;
+  onToggle: (e: React.MouseEvent) => void;
+}) => {
+  return (
+    <button
+      onClick={onToggle}
+      className={`rounded-full p-2 backdrop-blur-md transition-all duration-200 ${
+        isLiked
+          ? "scale-105 bg-rose-500 text-white shadow-md"
+          : "bg-white/70 text-neutral-700 hover:bg-white hover:text-rose-500"
+      }`}
+      aria-label="위시리스트 담기"
+    >
+      <HeartIcon className="h-4 w-4" filled={isLiked} />
+    </button>
+  );
+};
+
+// 로컬 헬퍼: 상품 가격 표시부
+const ProductPriceView = ({
+  price,
+  originalPrice,
+  discountRate,
+}: {
+  price: number;
+  originalPrice?: number;
+  discountRate?: number;
+}) => {
+  return (
+    <div className="mt-1 flex items-baseline gap-1.5">
+      {discountRate ? (
+        <span className="text-sm font-extrabold text-rose-600">{discountRate}%</span>
+      ) : null}
+      <span className="text-base font-extrabold text-neutral-900">{price.toLocaleString()}원</span>
+      {originalPrice ? (
+        <span className="text-xs font-normal text-neutral-400 line-through">
+          {originalPrice.toLocaleString()}원
+        </span>
+      ) : null}
+    </div>
+  );
+};
+
+// 메인 ProductCard 컴포넌트
+const ProductCard = ({ product }: { product: Product }) => {
+  const [isLiked, setIsLiked] = useState(false);
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsLiked(!isLiked);
+  };
+
+  return (
+    <Link
+      href={`/products/detail/${product.id}`}
+      className="group flex flex-col gap-2.5 transition-transform duration-200"
+    >
+      {/* Image Wrapper */}
+      <div className="relative aspect-3/4 w-full overflow-hidden rounded-2xl bg-neutral-100 shadow-xs">
+        <Image
+          src={product.imageUrl}
+          alt={product.name}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+
+        {/* Badges Top-Left */}
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+          {product.isBest ? <Badge variant="dark">BEST</Badge> : null}
+          {product.isNew ? <Badge variant="new">NEW</Badge> : null}
+        </div>
+
+        {/* Wishlist Top-Right */}
+        <div className="absolute top-3 right-3">
+          <WishlistButton isLiked={isLiked} onToggle={handleWishlistClick} />
+        </div>
+      </div>
+
+      {/* Product Content */}
+      <div className="flex flex-col gap-1 px-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+            {product.brand}
+          </span>
+          <div className="flex items-center gap-1 text-xs font-medium text-neutral-500">
+            <StarIcon className="h-3.5 w-3.5 text-amber-400" />
+            <span>{product.rating}</span>
+            <span className="text-neutral-300">({product.reviewCount})</span>
+          </div>
+        </div>
+
+        <h3 className="line-clamp-1 text-sm font-semibold text-neutral-900 transition-colors group-hover:text-neutral-600">
+          {product.name}
+        </h3>
+
+        <ProductPriceView
+          price={product.price}
+          originalPrice={product.originalPrice}
+          discountRate={product.discountRate}
+        />
+      </div>
+    </Link>
+  );
+};
+
+export default ProductCard;

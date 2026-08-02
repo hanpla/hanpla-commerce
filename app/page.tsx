@@ -1,9 +1,15 @@
-const Home = () => {
+import CategoryNav from "@/components/home/category-nav";
+import FeaturedProducts from "@/components/home/featured-products";
+import HeroCarousel from "@/components/home/hero-carousel";
+
+const HomePage = () => {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">Hanpla Commerce</h1>
-    </main>
+    <div className="flex flex-col gap-4">
+      <HeroCarousel />
+      <CategoryNav />
+      <FeaturedProducts />
+    </div>
   );
 };
 
-export default Home;
+export default HomePage;
