@@ -34,6 +34,7 @@ export const useAuth = () => {
     if (isHydrated && authState.user?.id) {
       useCartStore.getState().loadUserCart(authState.user.id);
       useWishlistStore.getState().loadUserWishlist(authState.user.id);
+      useAuthStore.getState().loadUserAddresses(authState.user.id);
     }
   }, [isHydrated, authState.user?.id]);
 
