@@ -1,13 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import CartIcon from "@/components/icons/cart-icon";
 import MenuIcon from "@/components/icons/menu-icon";
-import SearchIcon from "@/components/icons/search-icon";
-import useHydrated from "@/lib/hooks/use-hydrated";
+import SearchAutocomplete from "@/components/layout/search-autocomplete";
 import { MOCK_CATEGORIES } from "@/lib/data/mock-products";
+import useHydrated from "@/lib/hooks/use-hydrated";
 import { useCartStore } from "@/lib/store/use-cart-store";
 
 // 로컬 헬퍼 1: 상단 안내 띠 배너
@@ -38,25 +36,22 @@ const CategoryNavLinks = () => {
           {cat.name}
         </Link>
       ))}
+      <Link
+        href="/lookbook"
+        className="text-sm font-semibold text-rose-600 transition-colors hover:text-rose-700"
+      >
+        OOTD 룩북
+      </Link>
     </nav>
   );
 };
 
 // 메인 헤더 컴포넌트
 const Header = () => {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
   const store = useCartStore();
   const isHydrated = useHydrated();
 
   const cartCount = isHydrated ? store.items.reduce((sum, i) => sum + i.quantity, 0) : 0;
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur-md">
@@ -83,26 +78,10 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Center: Search Bar */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="relative hidden max-w-sm flex-1 items-center sm:flex"
-        >
-          <input
-            type="text"
-            placeholder="상품명, 브랜드, 카테고리 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-full border border-transparent bg-neutral-100 py-2 pr-9 pl-4 text-xs transition-all hover:bg-neutral-200/60 focus:border-neutral-900 focus:bg-white focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="absolute right-3 text-neutral-400 hover:text-neutral-900"
-            aria-label="검색"
-          >
-            <SearchIcon className="h-4 w-4" />
-          </button>
-        </form>
+        {/* Center: Search Bar with Autocomplete */}
+        <div className="hidden flex-1 justify-center sm:flex">
+          <SearchAutocomplete />
+        </div>
 
         {/* Right: Cart Trigger */}
         <div className="flex items-center gap-3">

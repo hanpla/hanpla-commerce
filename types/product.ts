@@ -49,3 +49,33 @@ export type Banner = {
   imageUrl: string;
   linkUrl: string;
 };
+
+export type ProductFilterState = {
+  category?: ProductCategory;
+  minPrice?: number;
+  maxPrice?: number;
+  brand?: string[];
+  color?: string[];
+  size?: ProductSize[];
+  sort?: SortOption;
+  searchQuery?: string;
+};
+
+export type LookbookTagSpot = {
+  id: string;
+  x: number; // Percentage from left (0-100)
+  y: number; // Percentage from top (0-100)
+  productId: string;
+};
+
+export type LookbookItem = {
+  id: string;
+  title: string;
+  modelName: string;
+  description: string;
+  imageUrl: string;
+  tags: string[];
+  tagSpots: LookbookTagSpot[];
+  likes: number;
+  createdAt: string;
+};

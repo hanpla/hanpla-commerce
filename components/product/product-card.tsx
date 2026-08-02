@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import HeartIcon from "@/components/icons/heart-icon";
 import StarIcon from "@/components/icons/star-icon";
 import Badge from "@/components/ui/badge";
+import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { Product } from "@/types/product";
 
 // 로컬 헬퍼: 위시리스트 토글 버튼
@@ -21,7 +21,7 @@ const WishlistButton = ({
       onClick={onToggle}
       className={`rounded-full p-2 backdrop-blur-md transition-all duration-200 ${
         isLiked
-          ? "scale-105 bg-rose-500 text-white shadow-md"
+          ? "scale-110 bg-rose-500 text-white shadow-md"
           : "bg-white/70 text-neutral-700 hover:bg-white hover:text-rose-500"
       }`}
       aria-label="위시리스트 담기"
@@ -58,17 +58,17 @@ const ProductPriceView = ({
 
 // 메인 ProductCard 컴포넌트
 const ProductCard = ({ product }: { product: Product }) => {
-  const [isLiked, setIsLiked] = useState(false);
+  const { isWishlisted, toggleWishlist } = useWishlist(product.id);
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsLiked(!isLiked);
+    toggleWishlist();
   };
 
   return (
     <Link
-      href={`/products/detail/${product.id}`}
+      href={`/products/detail?id=${product.id}`}
       className="group flex flex-col gap-2.5 transition-transform duration-200"
     >
       {/* Image Wrapper */}
@@ -89,7 +89,7 @@ const ProductCard = ({ product }: { product: Product }) => {
 
         {/* Wishlist Top-Right */}
         <div className="absolute top-3 right-3">
-          <WishlistButton isLiked={isLiked} onToggle={handleWishlistClick} />
+          <WishlistButton isLiked={isWishlisted} onToggle={handleWishlistClick} />
         </div>
       </div>
 
