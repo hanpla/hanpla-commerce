@@ -82,6 +82,7 @@ const CarouselSlide = ({ banner }: { banner: Banner }) => {
         alt={banner.title}
         fill
         priority
+        fetchPriority="high"
         placeholder="blur"
         blurDataURL={getBlurDataURL(1200, 600)}
         sizes="100vw"
