@@ -1,71 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import LockIcon from "@/components/icons/lock-icon";
 import UserIcon from "@/components/icons/user-icon";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import useAuth from "@/lib/hooks/use-auth";
+import { signupAction, AUTH_INITIAL_STATE } from "@/lib/actions/auth";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 const SignupForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/mypage";
 
-  const { signup } = useAuth();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [agreedTerms, setAgreedTerms] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [state, formAction, pending] = useActionState(signupAction, AUTH_INITIAL_STATE);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!name || !email || !password || !confirmPassword) {
-      setError("모든 필드를 입력해 주세요.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("비밀번호는 최소 6자 이상이어야 합니다.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("비밀번호가 일치하지 않습니다.");
-      return;
-    }
-
-    if (!agreedTerms) {
-      setError("이용약관 및 개인정보 처리방침에 동의해 주세요.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const res = await signup(name, email, password);
-      if (res.success) {
-        if (res.needsVerification) {
-          setError(null);
-          alert("회원가입 확인 이메일이 전송되었습니다. 이메일 수신함을 확인해 주세요!");
-        }
-        router.push(redirectTo);
-      } else {
-        setError(res.error || "회원가입에 실패했습니다.");
+  useEffect(() => {
+    if (state.success) {
+      if (state.needsVerification) {
+        alert("회원가입 확인 이메일이 전송되었습니다. 이메일 수신함을 확인해 주세요!");
       }
-    } catch {
-      setError("오류가 발생했습니다. 다시 시도해 주세요.");
-    } finally {
-      setIsSubmitting(false);
+      useAuthStore.getState().fetchSession();
+      router.push(redirectTo);
     }
-  };
+  }, [state.success, state.needsVerification, router, redirectTo]);
 
   return (
     <div className="w-full max-w-md rounded-3xl border border-neutral-200/80 bg-white/90 p-8 shadow-xl backdrop-blur-md">
@@ -76,13 +36,13 @@ const SignupForm = () => {
         </p>
       </div>
 
-      {error && (
+      {state.error && (
         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-600">
-          {error}
+          {state.error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form action={formAction} className="mt-6 space-y-4">
         <div>
           <label className="mb-1.5 block text-xs font-bold text-neutral-700 uppercase">이름</label>
           <div className="relative">
@@ -91,10 +51,9 @@ const SignupForm = () => {
             </div>
             <Input
               type="text"
+              name="name"
               required
               placeholder="홍길동"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
               className="pl-10 text-sm"
             />
           </div>
@@ -106,10 +65,9 @@ const SignupForm = () => {
           </label>
           <Input
             type="email"
+            name="email"
             required
             placeholder="example@hanpla.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             className="text-sm"
           />
         </div>
@@ -124,10 +82,9 @@ const SignupForm = () => {
             </div>
             <Input
               type="password"
+              name="password"
               required
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="pl-10 text-sm"
             />
           </div>
@@ -139,10 +96,9 @@ const SignupForm = () => {
           </label>
           <Input
             type="password"
+            name="confirmPassword"
             required
             placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
             className="text-sm"
           />
         </div>
@@ -151,8 +107,8 @@ const SignupForm = () => {
           <input
             type="checkbox"
             id="terms"
-            checked={agreedTerms}
-            onChange={(e) => setAgreedTerms(e.target.checked)}
+            name="agreedTerms"
+            value="true"
             className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
           />
           <label htmlFor="terms" className="text-xs text-neutral-600">
@@ -164,10 +120,10 @@ const SignupForm = () => {
           type="submit"
           variant="primary"
           size="lg"
-          disabled={isSubmitting}
+          disabled={pending}
           className="mt-4 w-full justify-center rounded-xl py-3 text-sm font-bold shadow-md transition-all hover:shadow-lg"
         >
-          {isSubmitting ? "가입 처리 중..." : "회원가입 완료"}
+          {pending ? "가입 처리 중..." : "회원가입 완료"}
         </Button>
       </form>
 

@@ -1,39 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import useAuth from "@/lib/hooks/use-auth";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 import { formatPhoneNumber } from "@/lib/utils/format";
+import { updateProfileAction } from "@/lib/actions/user";
+import { AuthActionState } from "@/types/user";
 
-import { updateProfileServerAction } from "@/lib/actions/user";
+const initialState: AuthActionState = {
+  success: false,
+};
 
 const ProfilePage = () => {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
+  const fetchSession = useAuthStore((state) => state.fetchSession);
+
   const [nameInput, setNameInput] = useState<string | null>(null);
   const [phoneInput, setPhoneInput] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [state, formAction, pending] = useActionState(updateProfileAction, initialState);
+
+  useEffect(() => {
+    if (state.success) {
+      fetchSession();
+    }
+  }, [state.success, fetchSession]);
 
   const name = nameInput ?? (user?.name || "");
   const phone = phoneInput ?? (user?.phone || "");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const result = await updateProfileServerAction({ name, phone });
-      if (result.success) {
-        updateProfile({ name, phone });
-        setIsSuccess(true);
-        setTimeout(() => setIsSuccess(false), 3000);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="max-w-xl space-y-6">
@@ -42,13 +39,19 @@ const ProfilePage = () => {
         <p className="mt-1 text-xs text-neutral-500">회원 가입 정보 및 개인 연락처를 관리합니다.</p>
       </div>
 
-      {isSuccess && (
+      {state.success && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700">
           회원정보가 성공적으로 업데이트되었습니다.
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-neutral-200 p-6">
+      {state.error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-600">
+          {state.error}
+        </div>
+      )}
+
+      <form action={formAction} className="space-y-4 rounded-2xl border border-neutral-200 p-6">
         <div>
           <label className="mb-1.5 block text-xs font-bold text-neutral-700 uppercase">
             이메일 주소 (변경 불가)
@@ -67,6 +70,7 @@ const ProfilePage = () => {
           </label>
           <Input
             type="text"
+            name="name"
             required
             value={name}
             onChange={(e) => setNameInput(e.target.value)}
@@ -80,6 +84,7 @@ const ProfilePage = () => {
           </label>
           <Input
             type="tel"
+            name="phone"
             placeholder="010-0000-0000"
             value={phone}
             onChange={(e) => setPhoneInput(formatPhoneNumber(e.target.value))}
@@ -92,10 +97,10 @@ const ProfilePage = () => {
             type="submit"
             variant="primary"
             size="md"
-            disabled={isSubmitting}
+            disabled={pending}
             className="rounded-xl font-bold"
           >
-            {isSubmitting ? "저장 중..." : "저장하기"}
+            {pending ? "저장 중..." : "저장하기"}
           </Button>
         </div>
       </form>

@@ -8,6 +8,8 @@ import UserIcon from "@/components/icons/user-icon";
 import SearchAutocomplete from "@/components/layout/search-autocomplete";
 import { MOCK_CATEGORIES } from "@/lib/data/mock-products";
 import useAuth from "@/lib/hooks/use-auth";
+import { logoutAction } from "@/lib/actions/auth";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 import useHydrated from "@/lib/hooks/use-hydrated";
 import { useCartStore } from "@/lib/store/use-cart-store";
 
@@ -51,7 +53,7 @@ const CategoryNavLinks = () => {
 
 // 로컬 헬퍼 3: 사용자 메뉴 드롭다운
 const UserNavMenu = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -122,7 +124,8 @@ const UserNavMenu = () => {
             <button
               onClick={async () => {
                 setIsOpen(false);
-                await logout();
+                await logoutAction();
+                useAuthStore.setState({ user: null, isLoading: false });
               }}
               className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50"
             >

@@ -34,3 +34,9 @@ export interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
 }
+
+export interface AuthActionState {
+  success: boolean;
+  error?: string;
+  needsVerification?: boolean;
+}

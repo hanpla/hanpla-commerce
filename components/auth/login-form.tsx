@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import GoogleIcon from "@/components/icons/google-icon";
@@ -9,43 +9,22 @@ import LockIcon from "@/components/icons/lock-icon";
 import UserIcon from "@/components/icons/user-icon";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import useAuth from "@/lib/hooks/use-auth";
+import { loginAction, AUTH_INITIAL_STATE } from "@/lib/actions/auth";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/mypage";
 
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [state, formAction, pending] = useActionState(loginAction, AUTH_INITIAL_STATE);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!email || !password) {
-      setError("이메일과 비밀번호를 모두 입력해 주세요.");
-      return;
+  useEffect(() => {
+    if (state.success) {
+      useAuthStore.getState().fetchSession();
+      router.push(redirectTo);
     }
-
-    setIsSubmitting(true);
-
-    try {
-      const res = await login(email, password);
-      if (res.success) {
-        router.push(redirectTo);
-      } else {
-        setError(res.error || "로그인에 실패했습니다.");
-      }
-    } catch {
-      setError("오류가 발생했습니다. 다시 시도해 주세요.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [state.success, router, redirectTo]);
 
   const handleSocialLogin = (provider: "google" | "kakao") => {
     alert(
@@ -62,13 +41,13 @@ const LoginForm = () => {
         </p>
       </div>
 
-      {error && (
+      {state.error && (
         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-600">
-          {error}
+          {state.error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form action={formAction} className="mt-6 space-y-4">
         <div>
           <label className="mb-1.5 block text-xs font-bold text-neutral-700 uppercase">
             이메일 주소
@@ -79,10 +58,9 @@ const LoginForm = () => {
             </div>
             <Input
               type="email"
+              name="email"
               required
               placeholder="example@hanpla.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="pl-10 text-sm"
             />
           </div>
@@ -101,10 +79,9 @@ const LoginForm = () => {
             </div>
             <Input
               type="password"
+              name="password"
               required
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="pl-10 text-sm"
             />
           </div>
@@ -114,10 +91,10 @@ const LoginForm = () => {
           type="submit"
           variant="primary"
           size="lg"
-          disabled={isSubmitting}
+          disabled={pending}
           className="mt-2 w-full justify-center rounded-xl py-3 text-sm font-bold shadow-md transition-all hover:shadow-lg"
         >
-          {isSubmitting ? "로그인 중..." : "로그인"}
+          {pending ? "로그인 중..." : "로그인"}
         </Button>
       </form>
 

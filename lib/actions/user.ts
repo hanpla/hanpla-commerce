@@ -1,12 +1,19 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { DeliveryAddress } from "@/types/user";
+import { AuthActionState, DeliveryAddress } from "@/types/user";
 
-export const updateProfileServerAction = async (data: {
-  name: string;
-  phone?: string;
-}): Promise<{ success: boolean; error?: string }> => {
+export const updateProfileAction = async (
+  _prevState: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> => {
+  const name = formData.get("name") as string;
+  const phone = (formData.get("phone") as string) || undefined;
+
+  if (!name) {
+    return { success: false, error: "이름을 입력해 주세요." };
+  }
+
   try {
     const supabase = await createClient();
     const {
@@ -14,8 +21,8 @@ export const updateProfileServerAction = async (data: {
       error,
     } = await supabase.auth.updateUser({
       data: {
-        name: data.name,
-        phone: data.phone,
+        name,
+        phone,
       },
     });
 
@@ -27,8 +34,8 @@ export const updateProfileServerAction = async (data: {
       await supabase.from("profiles").upsert(
         {
           id: user.id,
-          name: data.name,
-          phone: data.phone,
+          name,
+          phone,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "id" }

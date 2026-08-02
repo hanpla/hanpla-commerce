@@ -8,6 +8,8 @@ import MapPinIcon from "@/components/icons/map-pin-icon";
 import PackageIcon from "@/components/icons/package-icon";
 import UserIcon from "@/components/icons/user-icon";
 import useAuth from "@/lib/hooks/use-auth";
+import { logoutAction } from "@/lib/actions/auth";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 const NAV_ITEMS = [
   { label: "마이페이지 홈", href: "/mypage", icon: UserIcon },
@@ -21,10 +23,11 @@ const NAV_ITEMS = [
 const MyPageSidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const handleLogout = async () => {
-    await logout();
+    await logoutAction();
+    useAuthStore.setState({ user: null, isLoading: false });
     router.push("/");
   };
 
