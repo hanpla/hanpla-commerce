@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import CartHeaderBar from "@/components/cart/cart-header-bar";
 import CartItemRow from "@/components/cart/cart-item-row";
 import EmptyCartView from "@/components/cart/empty-cart-view";
@@ -9,6 +10,7 @@ import { useCartStore } from "@/lib/store/use-cart-store";
 import { calculateCartSummary } from "@/lib/utils/cart";
 
 const CartPage = () => {
+  const router = useRouter();
   const store = useCartStore();
   const isHydrated = useHydrated();
 
@@ -18,7 +20,7 @@ const CartPage = () => {
   const allSelected = store.items.length > 0 && store.items.every((i) => i.isSelected);
 
   const handleOrderSubmit = () => {
-    alert("Phase 3 결제 서비스 준비 중입니다.");
+    router.push("/checkout");
   };
 
   return (
