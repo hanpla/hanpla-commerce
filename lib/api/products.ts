@@ -5,6 +5,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import {
   CategoryOption,
+  PaginatedProductsResult,
   Product,
   ProductCategory,
   ProductColor,
@@ -269,6 +270,29 @@ export const getFilteredProducts = async (filters: ProductFilterState): Promise<
   }
 
   return products;
+};
+
+export const getPaginatedFilteredProducts = async (
+  filters: ProductFilterState
+): Promise<PaginatedProductsResult> => {
+  cacheLife("hours");
+  cacheTag("products");
+
+  const page = filters.page && filters.page > 0 ? filters.page : 1;
+  const limit = filters.limit && filters.limit > 0 ? filters.limit : 6;
+
+  const allProducts = await getFilteredProducts(filters);
+  const totalCount = allProducts.length;
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const paginatedProducts = allProducts.slice(startIndex, endIndex);
+
+  return {
+    products: paginatedProducts,
+    totalCount,
+    hasNextPage: endIndex < totalCount,
+    page,
+  };
 };
 
 export const getAvailableFilterOptions = async () => {

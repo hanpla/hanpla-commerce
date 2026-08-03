@@ -1,14 +1,15 @@
 "use client";
 
-import { Suspense, use, useEffect, useRef, useState } from "react";
+import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import InfiniteScrollSentinel from "@/components/common/infinite-scroll-sentinel";
 import CategoryTabs from "@/components/product/category-tabs";
 import ProductCard from "@/components/product/product-card";
 import ProductCardSkeleton from "@/components/product/product-card-skeleton";
 import ProductFilter from "@/components/product/product-filter";
 import ProductFilterSkeleton from "@/components/product/product-filter-skeleton";
 import SortBar from "@/components/product/sort-bar";
-import { getCategories, getCategoryById, getFilteredProducts } from "@/lib/api/products";
+import { getCategories, getCategoryById, getPaginatedFilteredProducts } from "@/lib/api/products";
 import { CategoryOption, Product, ProductCategory, ProductSize, SortOption } from "@/types/product";
 
 type ProductCatalogViewProps = {
@@ -18,6 +19,8 @@ type ProductCatalogViewProps = {
   initialProducts?: Product[];
   initialCurrentCategory?: CategoryOption;
 };
+
+const PAGE_SIZE = 6;
 
 // 서스펜스 래핑 내부 공통 상품 카탈로그 View
 const ProductCatalogContent = ({
@@ -43,6 +46,10 @@ const ProductCatalogContent = ({
   const [currentCategory, setCurrentCategory] = useState<CategoryOption | undefined>(initialCurCat);
   const [products, setProducts] = useState<Product[]>(initialProducts || []);
   const [isLoading, setIsLoading] = useState(!initialProducts);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(initialProducts ? initialProducts.length : 0);
+  const [hasMore, setHasMore] = useState(true);
   const [sort, setSort] = useState<SortOption>("newest");
   const isInitialMount = useRef(true);
 
@@ -62,10 +69,25 @@ const ProductCatalogContent = ({
   const colorKey = colorsParam.join(",");
   const sizeKey = sizesParam.join(",");
 
+  const filterState = useMemo(
+    () => ({
+      category: categoryParam ?? undefined,
+      searchQuery: queryParam,
+      brand: brandKey ? brandKey.split(",") : undefined,
+      color: colorKey ? colorKey.split(",") : undefined,
+      size: sizeKey ? (sizeKey.split(",") as ProductSize[]) : undefined,
+      minPrice: minPriceParam,
+      maxPrice: maxPriceParam,
+      sort,
+    }),
+    [categoryParam, queryParam, brandKey, colorKey, sizeKey, minPriceParam, maxPriceParam, sort]
+  );
+
   useEffect(() => {
     // 최초 마운트 시 initialProducts가 존재하면 추가 쿼리 없이 건너뜀 (클라이언트 waterfall 0회)
     if (isInitialMount.current && initialProducts && initialProducts.length > 0) {
       isInitialMount.current = false;
+      setHasMore(initialProducts.length >= PAGE_SIZE);
       return;
     }
     isInitialMount.current = false;
@@ -74,25 +96,24 @@ const ProductCatalogContent = ({
 
     const fetchData = async () => {
       setIsLoading(true);
-      const [catData, curCat, prodData] = await Promise.all([
+      setPage(1);
+
+      const [catData, curCat, paginatedRes] = await Promise.all([
         categories.length > 0 ? Promise.resolve(categories) : getCategories(),
         targetCategory ? getCategoryById(targetCategory) : Promise.resolve(undefined),
-        getFilteredProducts({
-          category: categoryParam ?? undefined,
-          searchQuery: queryParam,
-          brand: brandsParam.length > 0 ? brandsParam : undefined,
-          color: colorsParam.length > 0 ? colorsParam : undefined,
-          size: sizesParam.length > 0 ? sizesParam : undefined,
-          minPrice: minPriceParam,
-          maxPrice: maxPriceParam,
-          sort,
+        getPaginatedFilteredProducts({
+          ...filterState,
+          page: 1,
+          limit: PAGE_SIZE,
         }),
       ]);
 
       if (!isCancelled) {
         setCategories(catData);
         setCurrentCategory(curCat);
-        setProducts(prodData);
+        setProducts(paginatedRes.products);
+        setTotalCount(paginatedRes.totalCount);
+        setHasMore(paginatedRes.hasNextPage);
         setIsLoading(false);
       }
     };
@@ -103,17 +124,31 @@ const ProductCatalogContent = ({
       isCancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    targetCategory,
-    categoryParam,
-    queryParam,
-    brandKey,
-    colorKey,
-    sizeKey,
-    minPriceParam,
-    maxPriceParam,
-    sort,
-  ]);
+  }, [targetCategory, filterState]);
+
+  const handleLoadMore = useCallback(async () => {
+    if (isLoading || isFetchingNextPage || !hasMore) return;
+
+    setIsFetchingNextPage(true);
+    const nextPage = page + 1;
+
+    try {
+      const res = await getPaginatedFilteredProducts({
+        ...filterState,
+        page: nextPage,
+        limit: PAGE_SIZE,
+      });
+
+      setProducts((prev) => [...prev, ...res.products]);
+      setPage(nextPage);
+      setTotalCount(res.totalCount);
+      setHasMore(res.hasNextPage);
+    } catch (err) {
+      console.error("Failed to load more products:", err);
+    } finally {
+      setIsFetchingNextPage(false);
+    }
+  }, [isLoading, isFetchingNextPage, hasMore, page, filterState]);
 
   const pageTitle = targetCategory
     ? currentCategory?.name || targetCategory
@@ -124,7 +159,7 @@ const ProductCatalogContent = ({
   const pageSubtitle = targetCategory
     ? `${currentCategory?.name || targetCategory} 카테고리의 큐레이션 상품 목록입니다.`
     : queryParam
-      ? `총 ${products.length}개의 관련 상품이 검색되었습니다.`
+      ? `총 ${totalCount}개의 관련 상품이 검색되었습니다.`
       : "HANPLA 커머스의 전체 피스 컬렉션을 확인해보세요.";
 
   return (
@@ -144,7 +179,7 @@ const ProductCatalogContent = ({
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
         {/* Left: Main Product Grid (lg:col-span-3) */}
         <div className="flex flex-col gap-4 lg:col-span-3">
-          <SortBar sort={sort} onSortChange={setSort} totalCount={products.length} />
+          <SortBar sort={sort} onSortChange={setSort} totalCount={totalCount} />
 
           {isLoading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
@@ -162,10 +197,37 @@ const ProductCatalogContent = ({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
-              {products.map((prod) => (
-                <ProductCard key={prod.id} product={prod} />
-              ))}
+            <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
+                {products.map((prod) => (
+                  <ProductCard key={prod.id} product={prod} />
+                ))}
+              </div>
+
+              {/* 추가 로딩 스케일 스켈레톤 UI */}
+              {isFetchingNextPage && (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
+                  {Array.from({ length: 3 }).map((_, idx) => (
+                    <ProductCardSkeleton key={`next-skel-${idx}`} />
+                  ))}
+                </div>
+              )}
+
+              {/* 무한 스크롤 트리거 관찰 센티널 */}
+              <InfiniteScrollSentinel
+                onIntersect={handleLoadMore}
+                hasMore={hasMore}
+                isLoading={isLoading || isFetchingNextPage}
+              />
+
+              {/* 끝 도달 메세지 */}
+              {!hasMore && products.length > 0 && (
+                <div className="py-8 text-center">
+                  <p className="text-xs font-semibold text-neutral-400">
+                    모든 상품을 불러왔습니다.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

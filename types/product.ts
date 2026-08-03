@@ -59,6 +59,15 @@ export type ProductFilterState = {
   size?: ProductSize[];
   sort?: SortOption;
   searchQuery?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type PaginatedProductsResult = {
+  products: Product[];
+  totalCount: number;
+  hasNextPage: boolean;
+  page: number;
 };
 
 export type LookbookTagSpot = {
