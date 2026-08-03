@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import FilterIcon from "@/components/icons/filter-icon";
 import { getAvailableFilterOptions } from "@/lib/api/products";
 import { ProductColor, ProductSize } from "@/types/product";
@@ -25,6 +25,14 @@ const DEFAULT_COLORS: ProductColor[] = [
 ];
 
 const DEFAULT_SIZES: ProductSize[] = ["S", "M", "L", "XL", "FREE"];
+
+const PRICE_PRESETS = [
+  { label: "전체", min: "", max: "" },
+  { label: "5만원 이하", min: "", max: "50000" },
+  { label: "5만 ~ 10만원", min: "50000", max: "100000" },
+  { label: "10만 ~ 20만원", min: "100000", max: "200000" },
+  { label: "20만원 이상", min: "200000", max: "" },
+];
 
 // 로컬 헬퍼 1: 필터 섹션 제목
 const FilterSectionTitle = ({ title }: { title: string }) => (
@@ -58,6 +66,18 @@ const ProductFilter = ({ className = "" }: { className?: string }) => {
   const selectedSizes = searchParams.getAll("size") as ProductSize[];
   const minPrice = searchParams.get("minPrice") ?? "";
   const maxPrice = searchParams.get("maxPrice") ?? "";
+
+  const brandKey = selectedBrands.join(",");
+  const colorKey = selectedColors.join(",");
+  const sizeKey = selectedSizes.join(",");
+
+  // Set-based O(1) lookups for performance optimization (js-set-map-lookups)
+  const brandSet = useMemo(() => new Set(brandKey ? brandKey.split(",") : []), [brandKey]);
+  const colorSet = useMemo(() => new Set(colorKey ? colorKey.split(",") : []), [colorKey]);
+  const sizeSet = useMemo(
+    () => new Set(sizeKey ? (sizeKey.split(",") as ProductSize[]) : []),
+    [sizeKey]
+  );
 
   const createQueryString = useCallback(
     (name: string, value: string, isArray: boolean = false) => {
@@ -99,7 +119,7 @@ const ProductFilter = ({ className = "" }: { className?: string }) => {
     router.push(`${pathname}?${query}`, { scroll: false });
   };
 
-  const handlePriceChange = (min: string, max: string) => {
+  const handlePricePresetSelect = (min: string, max: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (min) params.set("minPrice", min);
     else params.delete("minPrice");
@@ -146,7 +166,7 @@ const ProductFilter = ({ className = "" }: { className?: string }) => {
         <FilterSectionTitle title="브랜드 (Brand)" />
         <div className="space-y-2">
           {availableBrands.map((brand) => {
-            const isChecked = selectedBrands.includes(brand);
+            const isChecked = brandSet.has(brand);
             return (
               <label
                 key={brand}
@@ -165,25 +185,27 @@ const ProductFilter = ({ className = "" }: { className?: string }) => {
         </div>
       </div>
 
-      {/* Price Range Filter */}
+      {/* Price Preset Range Filter */}
       <div className="space-y-3 border-t border-neutral-100 pt-5">
         <FilterSectionTitle title="가격대 (Price Range)" />
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            placeholder="최소 금액"
-            value={minPrice}
-            onChange={(e) => handlePriceChange(e.target.value, maxPrice)}
-            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs text-neutral-900 focus:border-neutral-900 focus:bg-white focus:outline-none"
-          />
-          <span className="text-neutral-400">~</span>
-          <input
-            type="number"
-            placeholder="최대 금액"
-            value={maxPrice}
-            onChange={(e) => handlePriceChange(minPrice, e.target.value)}
-            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs text-neutral-900 focus:border-neutral-900 focus:bg-white focus:outline-none"
-          />
+        <div className="flex flex-wrap gap-1.5">
+          {PRICE_PRESETS.map((preset) => {
+            const isSelected = minPrice === preset.min && maxPrice === preset.max;
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => handlePricePresetSelect(preset.min, preset.max)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
+                  isSelected
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -192,7 +214,7 @@ const ProductFilter = ({ className = "" }: { className?: string }) => {
         <FilterSectionTitle title="색상 (Color)" />
         <div className="flex flex-wrap gap-2">
           {availableColors.map((c) => {
-            const isSelected = selectedColors.includes(c.name);
+            const isSelected = colorSet.has(c.name);
             return (
               <button
                 key={c.name}
@@ -220,7 +242,7 @@ const ProductFilter = ({ className = "" }: { className?: string }) => {
         <FilterSectionTitle title="사이즈 (Size)" />
         <div className="flex flex-wrap gap-1.5">
           {availableSizes.map((sz) => {
-            const isSelected = selectedSizes.includes(sz);
+            const isSelected = sizeSet.has(sz);
             return (
               <button
                 key={sz}

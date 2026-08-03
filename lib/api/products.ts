@@ -280,11 +280,74 @@ export const getPaginatedFilteredProducts = async (
 
   const page = filters.page && filters.page > 0 ? filters.page : 1;
   const limit = filters.limit && filters.limit > 0 ? filters.limit : 6;
-
-  const allProducts = await getFilteredProducts(filters);
-  const totalCount = allProducts.length;
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
+
+  const hasColorFilter = Boolean(filters.color && filters.color.length > 0);
+  const hasSizeFilter = Boolean(filters.size && filters.size.length > 0);
+
+  // 색상/사이즈 인메모리 옵션 필터가 없는 경우 SQL 레벨 Range Query & Count 적용
+  if (!hasColorFilter && !hasSizeFilter) {
+    const supabase = getDbClient();
+    let query = supabase.from("products").select("*, product_options(*)", { count: "exact" });
+
+    if (filters.category) {
+      query = query.eq("category", filters.category);
+    }
+
+    if (filters.minPrice !== undefined) {
+      query = query.gte("price", filters.minPrice);
+    }
+
+    if (filters.maxPrice !== undefined) {
+      query = query.lte("price", filters.maxPrice);
+    }
+
+    if (filters.brand && filters.brand.length > 0) {
+      query = query.in("brand", filters.brand);
+    }
+
+    if (filters.searchQuery) {
+      const q = filters.searchQuery.trim();
+      query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`);
+    }
+
+    switch (filters.sort) {
+      case "popular":
+        query = query.order("review_count", { ascending: false });
+        break;
+      case "price-low":
+        query = query.order("price", { ascending: true });
+        break;
+      case "price-high":
+        query = query.order("price", { ascending: false });
+        break;
+      case "newest":
+      default:
+        query = query.order("created_at", { ascending: false });
+        break;
+    }
+
+    query = query.range(startIndex, endIndex - 1);
+
+    const { data, error, count } = await query;
+
+    if (!error && data) {
+      const products = (data as DbProductRow[]).map(mapRowToProduct);
+      const totalCount = count ?? products.length;
+
+      return {
+        products,
+        totalCount,
+        hasNextPage: endIndex < totalCount,
+        page,
+      };
+    }
+  }
+
+  // 복합 옵션 필터가 지정된 경우 인메모리 필터링 적용
+  const allProducts = await getFilteredProducts(filters);
+  const totalCount = allProducts.length;
   const paginatedProducts = allProducts.slice(startIndex, endIndex);
 
   return {

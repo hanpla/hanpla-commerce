@@ -25,7 +25,7 @@ export const useWishlistStore = create<WishlistStore>()((set, get) => ({
     }
   },
 
-  toggleWishlist: (productId: string) => {
+  toggleWishlist: async (productId: string) => {
     const userId = useAuthStore.getState().user?.id;
     if (!userId) {
       if (typeof window !== "undefined") {
@@ -40,10 +40,20 @@ export const useWishlistStore = create<WishlistStore>()((set, get) => ({
 
     if (isExists) {
       set({ wishlistIds: current.filter((id) => id !== productId) });
-      deleteWishlistItemFromDb(userId, productId).catch(() => {});
+      try {
+        await deleteWishlistItemFromDb(userId, productId);
+      } catch (err) {
+        console.error("Failed to delete wishlist item from DB, rolling back state:", err);
+        set({ wishlistIds: current });
+      }
     } else {
       set({ wishlistIds: [...current, productId] });
-      addWishlistItemToDb(userId, productId).catch(() => {});
+      try {
+        await addWishlistItemToDb(userId, productId);
+      } catch (err) {
+        console.error("Failed to add wishlist item to DB, rolling back state:", err);
+        set({ wishlistIds: current });
+      }
     }
   },
 
